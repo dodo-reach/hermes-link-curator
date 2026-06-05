@@ -153,7 +153,7 @@ def get_entries_by_date() -> list[ArchivioDay]:
     days = []
     for date in sorted(by_date.keys(), reverse=True):
         d = datetime.strptime(date, "%Y-%m-%d")
-        label = d.strftime("%-d %b %Y")  # "14 May 2026"
+        label = d.strftime("%d %b %Y").lstrip("0")  # "14 May 2026"
         days.append(ArchivioDay(date=date, label=label, entries=by_date[date]))
 
     return days

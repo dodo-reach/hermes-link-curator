@@ -19,7 +19,10 @@ VAULT = Path(os.environ.get(
 ))
 INDEX = VAULT / "INDEX.md"
 
-days = sorted(VAULT.glob("2026-*.md"), reverse=True)
+days = sorted(
+    [p for p in VAULT.glob("*.md") if re.fullmatch(r"\d{4}-\d{2}-\d{2}\.md", p.name)],
+    reverse=True,
+)
 print(f"Found {len(days)} daily files")
 
 all_entries = []

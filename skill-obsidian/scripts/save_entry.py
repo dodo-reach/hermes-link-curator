@@ -15,6 +15,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 # Auto-discover vault path:
 # This script lives at <profile>/skills/note-taking/obsidian/scripts/save_entry.py
@@ -25,6 +26,7 @@ VAULT = Path(os.environ.get(
     Path(__file__).resolve().parent.parent.parent.parent / "vault"
 ))
 INDEX = VAULT / "INDEX.md"
+INDEX_HEADER = "# Index\n---\n"
 
 
 def parse_args():
@@ -76,19 +78,16 @@ def build_entry_block(args) -> str:
 
 def append_to_daily(entry_block: str, date: str) -> Path:
     """Append entry to YYYY-MM-DD.md daily note, creating it if needed."""
+    VAULT.mkdir(parents=True, exist_ok=True)
     daily = VAULT / f"{date}.md"
     header = f"# {date}\n\n"
     entry_with_sep = entry_block.rstrip("\n") + "\n---\n"
     if daily.exists():
         content = daily.read_text().rstrip("\n")
-        # Ensure the previous entry is closed with --- before adding a new one
         if not content.endswith("---"):
             content += "\n---\n"
         else:
-            # Content ends with --- (possibly followed by blank lines). Strip trailing
-            # whitespace and replace the trailing --- with a fresh one to guarantee
-            # clean separation.
-            content = content.rstrip() + "\n---\n"
+            content += "\n"
         daily.write_text(content + entry_with_sep)
     else:
         daily.write_text(header + entry_with_sep)
@@ -98,10 +97,11 @@ def append_to_daily(entry_block: str, date: str) -> Path:
 def prepend_to_index(entry_block: str) -> None:
     """
     Prepend entry to INDEX.md using read+patch.
-    Raises ValueError if INDEX.md is missing or unreadable.
+    Creates the vault and INDEX.md on first use.
     """
+    VAULT.mkdir(parents=True, exist_ok=True)
     if not INDEX.exists():
-        raise ValueError(f"INDEX.md not found at {INDEX}")
+        INDEX.write_text(INDEX_HEADER)
 
     content = INDEX.read_text()
     lines = content.splitlines()
@@ -133,11 +133,20 @@ def validate_date(date_str: str) -> bool:
         return False
 
 
+def validate_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
 def main():
     args = parse_args()
 
     if not validate_date(args.added):
         print(f"ERROR: Invalid date '{args.added}' (expected YYYY-MM-DD)", file=sys.stderr)
+        sys.exit(1)
+
+    if not validate_url(args.url):
+        print("ERROR: Invalid URL (expected http:// or https://)", file=sys.stderr)
         sys.exit(1)
 
     valid_types = {"github", "x-post", "article", "tool", "video", "paper", "other"}

@@ -19,16 +19,21 @@ The link-curator dashboard is a FastAPI app running on **port 8090**, separate f
 
 ```bash
 # Find all dashboard processes
-ps aux | grep -E "8090|archvio|archivio-dashboard" | grep -v grep
+lsof -nP -iTCP:8090 -sTCP:LISTEN
 
-# Check working directory and full command
-ls -la /proc/<pid>/cwd
-cat /proc/<pid>/cmdline | tr '\0' ' '
+# Check the command
+ps -p <pid> -o pid,command
+
+# Check working directory (macOS)
+lsof -a -p <pid> -d cwd
+
+# Check working directory (Linux)
+readlink /proc/<pid>/cwd
 ```
 
 **Current layout (verify with `ps aux | grep "8090"`):**
 - The dashboard process typically runs `uvicorn main:app --port 8090` from `<profile-dir>/dashboard/`
-- The working directory shown by `ls -la /proc/<pid>/cwd` is authoritative — do not assume the path matches the skill's description if multiple dashboard instances exist
+- The process working directory is authoritative — do not assume the path matches the skill's description if multiple dashboard instances exist
 - This dashboard is a **separate process** from the official Hermes dashboard (the `hermes dashboard` command, default port 9119). They are independent and can run side-by-side.
 
 ## Key paths
@@ -73,15 +78,18 @@ This means the dashboard always reflects the current vault state without any man
 
 The dashboard has **no watchdog** and dies silently (e.g. after a system reboot). Unlike the official Hermes dashboard which can be supervised by `hermes gateway install`, the link-curator dashboard must be manually restarted when the process exits. See "Dashboard went offline — restart procedure" below.
 
-> **⚠️ Terminal tool constraint:** Do NOT use `nohup ... &` — the terminal tool rejects shell-level background wrappers. Use `terminal(background=true)` instead.
->
-> ```bash
-> # WRONG — will be rejected:
-> cd <profile-dir>/dashboard && nohup python3 -m uvicorn main:app --host 127.0.0.1 --port 8090 &
->
-> # CORRECT — terminal(background=true):
-> cd <profile-dir>/dashboard && python3 -m uvicorn main:app --host 127.0.0.1 --port 8090
-> ```
+```bash
+cd <profile-dir>/dashboard
+./start.sh 8090
+```
+
+For a background process:
+
+```bash
+cd <profile-dir>/dashboard
+mkdir -p ../logs
+nohup ./start.sh 8090 > ../logs/dashboard.log 2>&1 &
+```
 
 After starting, verify readiness:
 ```bash
@@ -91,7 +99,7 @@ Expected: `{"status":"healthy","total_entries":N,...}`
 
 If health fails, check the background process output:
 ```bash
-process(action="log", session_id="<session_id>")
+tail -50 <profile-dir>/logs/dashboard.log
 ```
 
 ## Validate
@@ -207,7 +215,7 @@ curl http://localhost:8090/reload-cache
 ## Related skills
 
 - `obsidian` — vault entry format, save workflow, validate.py
-- `camofox` — for fetching X/Twitter content to save to vault
+- `camofox` — for browser-session fetching on sites that block simple extraction
 
 ## References
 

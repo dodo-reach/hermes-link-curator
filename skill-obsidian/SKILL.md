@@ -68,19 +68,20 @@ cd <profile-dir>/dashboard && python3 validate.py
 
 **Manual workflow** (only if script unavailable): fetch → append to daily → read INDEX first, then `patch` to prepend. Never use `write_file` on INDEX.md.
 
-## X/Twitter — use camofox REST API
+## X/Twitter — optional browser-session fetch
 
-`web_extract` and `browser_navigate` return login walls on X. Use camofox via REST API:
+`web_extract` and `browser_navigate` may return login walls on X. If camofox is installed and the content is important, use its local REST API:
 
 ```bash
+CAMOFOX_USER_ID="${CAMOFOX_USER_ID:-link-curator}"
 TAB=$(curl -s -X POST http://localhost:9377/tabs \
   -H "Content-Type: application/json" \
-  -d '{"userId":"edoardo","sessionKey":"sessionX","url":"https://x.com/USERNAME/status/POST_ID"}')
+  -d "{\"userId\":\"$CAMOFOX_USER_ID\",\"sessionKey\":\"link-curator\",\"url\":\"https://x.com/USERNAME/status/POST_ID\"}")
 TAB_ID=$(echo "$TAB" | python3 -c "import sys,json; print(json.load(sys.stdin)['tabId'])")
 sleep 3
-curl -s "http://localhost:9377/tabs/$TAB_ID/snapshot?userId=edoardo" > /tmp/snap.json
+curl -s "http://localhost:9377/tabs/$TAB_ID/snapshot?userId=$CAMOFOX_USER_ID" > /tmp/snap.json
 python3 -c "import sys,json; d=json.load(open('/tmp/snap.json')); print(d.get('snapshot','')[:6000])"
-curl -s -X DELETE "http://localhost:9377/tabs/$TAB_ID?userId=edoardo"
+curl -s -X DELETE "http://localhost:9377/tabs/$TAB_ID?userId=$CAMOFOX_USER_ID"
 ```
 
 Content is in `.snapshot`, NOT `.accessibilityTree.content`. **jq is not available** — always use python3 for JSON parsing.
@@ -113,7 +114,7 @@ ls <profile-dir>/vault/2026-05-*.md
 
 ## validate.py path
 
-The validate script lives in the **dashboard directory**, NOT in the profile vault. The dashboard is a sibling directory to the profile, e.g. `~/archiviosofi/archiviosofi-dashboard/` for the archiviosofi profile. The vault is at `~/.hermes/profiles/<profile>/vault/`.
+The validate script lives in the **dashboard directory**, NOT in the profile vault. In a standard install the dashboard is at `~/.hermes/profiles/<profile>/dashboard/` and the vault is at `~/.hermes/profiles/<profile>/vault/`.
 
 **Always check the actual path before running:**
 ```bash
@@ -149,8 +150,8 @@ The link-curator dashboard runs at `http://localhost:8090`. It is a standalone F
 **Never use `write_file` on INDEX.md.** The only safe operations are `read_file` first, then `patch`. Even for "quick edits" — read first, patch, never overwrite. The script enforces this; manual workflow must follow it too.
 
 **INDEX.md headers differ by profile.** The `prepend_to_index` function finds the first `---` separator regardless of what header text precedes it:
-- Archivio: `# Index` followed by `---`
-- Archiviosofi: `# Link Archive — Sofia Ferrante` followed by `---`
+- Default: `# Index` followed by `---`
+- Custom profile headers are also fine as long as the first separator is `---`
 
 Do NOT look for a specific header string — find the first `---` and insert after it.
 
@@ -232,4 +233,4 @@ If counts don't match: extract missing entries from INDEX and patch into the dai
 
 ## Related skills
 
-- `camofox` — for X/Twitter scraping and anti-bot bypass details
+- `camofox` — for browser-session fetching on sites that block simple extraction

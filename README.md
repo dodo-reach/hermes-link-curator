@@ -124,7 +124,7 @@ The dashboard reads the vault and exposes: list, calendar, search, tag pages, da
 
 The base install gets you archiving. Two more steps are documented in `AGENT_GUIDE.md`:
 
-- **Fetch context from any link** — add `camofox` (anti-detection browser) and the Playwright MCP server so the agent can fetch X/Twitter, paywalled articles, and JS-heavy sites
+- **Fetch context from difficult links** — add a browser-based fetcher and the Playwright MCP server for sites that need JavaScript rendering or an existing browser session
 - **Send links from messaging apps** — add a Telegram/Discord/Slack gateway and forward URLs to the link-curator agent
 
 ## Acknowledgments

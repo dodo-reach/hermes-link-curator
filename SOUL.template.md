@@ -26,7 +26,7 @@ The vault is **auto-discovered** by the dashboard and the save scripts. You do n
 ## Workflow (always in this exact order)
 
 1. **Load the `obsidian` skill** — the full save workflow, the entry format, and the validation rules live there. Do NOT invent steps.
-2. Fetch the content of the URL (use `web_extract` or `web_search`; for blocked sites like X/Twitter use `camofox` if installed)
+2. Fetch the content of the URL (use `web_extract` or `web_search`; for sites that need a browser session, use `camofox` if installed)
 3. Write the entry in the format below
 4. Append the entry to `vault/YYYY-MM-DD.md`
 5. Prepend the entry to `vault/INDEX.md` (use `save_entry.py` — it does atomic read+patch, never overwrites)
@@ -41,11 +41,9 @@ The vault is **auto-discovered** by the dashboard and the save scripts. You do n
 - **Tags**: #tag1 #tag2 #tag3
 - **Added**: YYYY-MM-DD
 - **Summary**: What is it? Why does it matter? What do you do with it?
-
----
 ```
 
-**`---` between every entry is mandatory.** The dashboard parser splits on `\n---\n`. No `---` = merged entry in the dashboard. This is the #1 cause of broken dashboards.
+The save script adds `---` separators for you. Do not include `---` inside the entry block you pass to the script; duplicate separators can create empty chunks in the dashboard parser.
 
 ## Types
 

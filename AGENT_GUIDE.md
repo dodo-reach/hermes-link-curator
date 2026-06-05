@@ -81,6 +81,10 @@ ls "$PROFILE_DIR/skills/note-taking/"
 
 ```bash
 cp -r "$REPO_DIR/dashboard" "$PROFILE_DIR/dashboard"
+mkdir -p "$PROFILE_DIR/vault"
+if [ ! -f "$PROFILE_DIR/vault/INDEX.md" ]; then
+    printf '# Index\n---\n' > "$PROFILE_DIR/vault/INDEX.md"
+fi
 ```
 
 Install Python dependencies. The dashboard needs `fastapi`, `uvicorn`, `jinja2`, `pydantic`. We try to reuse the user's existing Python environment first to avoid yet another venv:
@@ -195,9 +199,9 @@ The base install works. Two more levels, on demand.
 
 ### Level 1 — Fetch context from any link
 
-The base `obsidian` skill has web search and `web_extract`. If the user wants to archive X/Twitter posts, paywalled articles, or JS-heavy sites, they need:
+The base `obsidian` skill has web search and `web_extract`. If the user wants to archive X/Twitter posts, login-gated pages, or JS-heavy sites, they need:
 
-- **camofox** — anti-detection browser. Install: `hermes skills install https://raw.githubusercontent.com/dodo-reach/camofox-skill/main/SKILL.md`
+- **camofox** — browser-based fetcher for pages that need an existing session. Install: `hermes skills install https://raw.githubusercontent.com/dodo-reach/camofox-skill/main/SKILL.md`
 - **Playwright MCP** — JS rendering. Install: `hermes mcp add playwright -- npx -y @playwright/mcp@latest`
 
 Then ask the user to test by sending an X post URL.

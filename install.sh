@@ -58,6 +58,10 @@ cp -r "$REPO_DIR/skill-link-curator-dashboard" "$PROFILE_DIR/skills/note-taking/
 # 5. Install the dashboard
 echo "→ Installing dashboard..."
 cp -r "$REPO_DIR/dashboard" "$PROFILE_DIR/dashboard"
+mkdir -p "$PROFILE_DIR/vault"
+if [ ! -f "$PROFILE_DIR/vault/INDEX.md" ]; then
+    printf '# Index\n---\n' > "$PROFILE_DIR/vault/INDEX.md"
+fi
 
 # 6. Choose Python interpreter
 HERMES_VENV="$HOME/.hermes/hermes-agent/venv/bin/python"
