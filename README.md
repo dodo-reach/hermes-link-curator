@@ -2,6 +2,12 @@
 
 A **link curator profile pack** for [Hermes Agent](https://github.com/NousResearch/hermes-agent) — turn any Hermes agent into a librarian. Send a URL, get it archived, tagged, summarized, and browsable in a fast Obsidian-style dashboard.
 
+## Dashboard preview
+
+[![Hermes Link Curator dashboard running on iPhone](assets/dashboard-preview.jpg)](assets/dashboard-preview.mp4)
+
+Click the preview to watch the dashboard in use on iPhone. The archive is just a local web app, so it works well on desktop and mobile: list view, calendar, search, tags, day pages, graph view, and JSON stats all read from the same markdown vault.
+
 ## What this is
 
 - **2 skills** (`obsidian` + `link-curator-dashboard`) — drop into any Hermes profile
@@ -23,6 +29,61 @@ The agent will read `AGENT_GUIDE.md`, create a new profile, copy the pieces, and
 or use the dashboard at `http://localhost:8090`.
 
 **Prefer the manual path?** Run `./install.sh` from this repo — it asks one question (profile name) and does the same thing.
+
+## Where the dashboard lives
+
+The installer copies the web app into your Hermes profile and starts it from:
+
+```bash
+~/.hermes/profiles/<profile-name>/dashboard/
+```
+
+By default it listens on:
+
+```text
+http://localhost:8090
+```
+
+That means it is exposed only on the machine running Hermes. The dashboard reads the vault at `~/.hermes/profiles/<profile-name>/vault/`, so every archived link appears there as markdown and in the web UI.
+
+You can change the port when installing, or later by running:
+
+```bash
+cd ~/.hermes/profiles/<profile-name>/dashboard
+./start.sh 8091
+```
+
+The dashboard binds to `127.0.0.1` by default. To make it reachable from your iPhone on the same private network, start it with:
+
+```bash
+cd ~/.hermes/profiles/<profile-name>/dashboard
+ARCHIVIO_HOST=0.0.0.0 ./start.sh 8090
+```
+
+Then open `http://<your-mac-ip>:8090` from Safari on iPhone.
+
+## Use it like an iPhone app
+
+Once the dashboard is reachable from your iPhone:
+
+1. Open the dashboard URL in Safari.
+2. Tap the Share button.
+3. Tap **Add to Home Screen**.
+4. Name it `Archivio` or `Hermes Links`.
+
+From then on, you can launch the archive from your Home Screen like a small private app.
+
+## Access from anywhere with Tailscale
+
+For access outside your home network, use [Tailscale](https://tailscale.com/) instead of exposing the dashboard to the public internet:
+
+1. Install Tailscale on the Mac running Hermes and on your iPhone.
+2. Sign both devices into the same tailnet.
+3. Start the dashboard with `ARCHIVIO_HOST=0.0.0.0`.
+4. On iPhone, open `http://<mac-tailscale-name>:8090` or `http://<mac-tailscale-ip>:8090`.
+5. Add that page to the Home Screen from Safari.
+
+The dashboard does not include authentication, so keep it behind localhost, your LAN, or Tailscale. Do not publish it directly to the open internet.
 
 ## Repo layout
 
