@@ -16,6 +16,17 @@ The archive is just a local web app, so it works well on desktop and mobile: lis
 
 The agent receives links on Telegram, Discord, or anywhere else → fetches content → writes entries to a local markdown vault → the dashboard reads the vault and serves a search/tag/graph view.
 
+## Requirements and platforms
+
+Hermes Link Curator is designed for Unix-like environments:
+
+- **macOS** — supported
+- **Linux** — supported
+- **Windows via WSL** — should work if Hermes works in your WSL environment
+- **Windows native** — not currently supported by the installer
+
+You need [Hermes Agent](https://github.com/NousResearch/hermes-agent), Python 3.10+, and a Bash-compatible shell. The dashboard itself is a standard FastAPI app, but the installer and profile paths assume `~/.hermes/...`.
+
 ## Install (30 seconds, agent-guided)
 
 Send your Hermes agent a message like:
