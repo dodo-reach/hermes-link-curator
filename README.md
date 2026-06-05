@@ -14,7 +14,7 @@ The archive is just a local web app, so it works well on desktop and mobile: lis
 - **1 dashboard** — standalone FastAPI app, Obsidian-style web UI (port 8090)
 - **1 SOUL template** — gives the agent a "librarian" personality (archive, don't summarize)
 
-The agent receives links → fetches content → writes entries to a local markdown vault → the dashboard reads the vault and serves a search/tag/graph view.
+The agent receives links on Telegram, Discord, or anywhere else → fetches content → writes entries to a local markdown vault → the dashboard reads the vault and serves a search/tag/graph view.
 
 ## Install (30 seconds, agent-guided)
 
