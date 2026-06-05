@@ -5,7 +5,7 @@
 
   <div style="margin: 1.5rem 0 1rem;">
     <a href="/" style="font-size:0.85rem;color:var(--text-muted);">← All links</a>
-    <span style="font-size:0.85rem;color:var(--text-muted);"> · {{ day_entries|length }} links</span>
+    <span style="font-size:0.85rem;color:var(--text-muted);"> · {{ day_entries|length }} link{% if day_entries|length != 1 %}s{% endif %}</span>
   </div>
 
   <div class="days-list">

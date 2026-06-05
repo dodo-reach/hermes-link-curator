@@ -12,7 +12,7 @@
 
   <div style="margin-bottom: 1.5rem;">
     {% if query %}
-    <span style="font-size:0.9rem;color:var(--text-muted);">{{ results|length }} results for "{{ query }}"</span>
+    <span style="font-size:0.9rem;color:var(--text-muted);">{{ results|length }} result{% if results|length != 1 %}s{% endif %} for "{{ query }}"</span>
     {% endif %}
   </div>
 

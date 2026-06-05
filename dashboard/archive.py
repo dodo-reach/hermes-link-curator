@@ -195,8 +195,11 @@ def get_graph_data() -> dict:
         for t in e.tags:
             tag_counts[t] = tag_counts.get(t, 0) + 1
 
-    # Keep only tags used >=2 times — reduces noise, keeps the graph readable
+    # Keep repeated tags by default to reduce noise. For a fresh/small archive,
+    # fall back to all tags so the graph view is not blank for first-time users.
     active_tags = {t for t, c in tag_counts.items() if c >= 2}
+    if not active_tags:
+        active_tags = set(tag_counts)
 
     nodes: list[dict] = []
     for tag, count in sorted(tag_counts.items(), key=lambda x: -x[1]):

@@ -105,7 +105,7 @@
     const header = document.createElement('div');
     header.className = 'day-entries-header';
     header.innerHTML = '<span class="day-entries-title">' + label + '</span>' +
-      '<span class="day-entries-count">' + count + ' links · close</span>';
+      '<span class="day-entries-count">' + count + ' link' + (count === 1 ? '' : 's') + ' · close</span>';
     header.addEventListener('click', function() {
       section.classList.remove('is-open');
       setTimeout(function() { panel.innerHTML = ''; }, 200);
