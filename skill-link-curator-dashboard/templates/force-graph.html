@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="graph-header">
+    <h1>Graph</h1>
+    <p class="graph-meta">
+      {{ node_count }} nodi · {{ link_count }} connessioni
+      <span class="graph-legend">
+        <span class="legend-dot legend-tag"></span> tag
+        <span class="legend-dot legend-entry"></span> entry
+      </span>
+    </p>
+  </div>
+  <div id="graph-container"></div>
+  <p class="graph-hint">drag per spostare · scroll per zoomare · click su un tag per filtrare · doppio click per reset</p>
+</div>
+{% endblock %}
+
+{% block calendar_script %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+(async function() {
+  // 1. Fetch data from your endpoint
+  const res = await fetch('/graph-json');
+  const data = await res.json();  // {nodes, links}
+
+  // 2. Set up SVG container
+  const container = document.getElementById('graph-container');
+  const width = container.clientWidth;
+  const height = Math.max(560, window.innerHeight - 240);
+
+  const svg = d3.select('#graph-container').append('svg')
+    .attr('width', width)
+    .attr('height', height);
+  const g = svg.append('g');
+
+  // 3. Zoom (must be set up before drag handlers)
+  const zoom = d3.zoom()
+    .scaleExtent([0.3, 5])
+    .on('zoom', (e) => g.attr('transform', e.transform));
+  svg.call(zoom);
+
+  // 4. Color map per node kind/type (edit to match your data)
+  const typeColors = {
+    'github': '#2c2c2c',
+    'x-post': '#888',
+    'article': '#5a7a9a',
+    'tool': '#7a9a5a',
+    'video': '#9a7a5a',
+    'paper': '#9a5a7a',
+    'other': '#aaa'
+  };
+
+  // 5. Edges first (so circles draw on top)
+  const link = g.append('g')
+    .attr('stroke', '#e5e4e0')
+    .attr('stroke-width', 0.6)
+    .selectAll('line')
+    .data(data.links)
+    .join('line');
+
+  // 6. Node groups (circle + label + tooltip)
+  const node = g.append('g')
+    .selectAll('g')
+    .data(data.nodes)
+    .join('g')
+    .attr('class', d => d.kind === 'tag' ? 'node-tag' : 'node-entry')
+    .style('cursor', d => d.kind === 'tag' ? 'pointer' : 'grab');
+
+  node.append('circle')
+    .attr('r', d => d.kind === 'tag'
+      ? Math.min(28, 6 + Math.sqrt(d.count) * 4)  // tag size = sqrt of count
+      : 4)
+    .attr('fill', d => d.kind === 'tag'
+      ? '#f4f3ef'  // neutral hub
+      : (typeColors[d.type] || '#aaa'))
+    .attr('stroke', d => d.kind === 'tag' ? '#2c2c2c' : '#fff')
+    .attr('stroke-width', d => d.kind === 'tag' ? 1.5 : 1);
+
+  node.append('text')
+    .text(d => d.label)
+    .attr('font-size', d => d.kind === 'tag' ? '12px' : '9px')
+    .attr('font-family', 'Inter, sans-serif')
+    .attr('font-weight', d => d.kind === 'tag' ? 500 : 400)
+    .attr('fill', '#2c2c2c')
+    .attr('dx', d => d.kind === 'tag' ? 0 : 7)  // offset entry label
+    .attr('dy', d => d.kind === 'tag' ? 4 : 3)
+    .style('pointer-events', 'none');
+
+  node.append('title')  // browser tooltip on hover
+    .text(d => d.kind === 'tag'
+      ? `${d.label} · ${d.count} entr${d.count === 1 ? 'y' : 'ies'}`
+      : `${d.label}${d.url ? '\n' + d.url : ''}`);
+
+  // 7. Force simulation — see references/graph-view.md for tuning
+  const sim = d3.forceSimulation(data.nodes)
+    .force('link', d3.forceLink(data.links)
+      .id(d => d.id)
+      .distance(d => d.source.kind === 'tag' ? 40 : 50)
+      .strength(0.6))
+    .force('charge', d3.forceManyBody()
+      .strength(d => d.kind === 'tag' ? -180 : -30))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('collision', d3.forceCollide()
+      .radius(d => d.kind === 'tag' ? 32 : 8))
+    .on('tick', () => {
+      link
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
+      node.attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+
+  // 8. Drag — hub nodes unfix on release, leaves stay put
+  const drag = d3.drag()
+    .on('start', (e, d) => {
+      if (!e.active) sim.alphaTarget(0.3).restart();
+      d.fx = d.x; d.fy = d.y;
+    })
+    .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
+    .on('end', (e, d) => {
+      if (!e.active) sim.alphaTarget(0);
+      if (d.kind === 'entry') { d.fx = null; d.fy = null; }
+    });
+  node.call(drag);
+
+  // 9. Click hub = filter (highlight cluster, dim rest)
+  let activeTag = null;
+  node.on('click', (e, d) => {
+    if (d.kind !== 'tag') return;
+    e.stopPropagation();
+    if (activeTag === d.id) {
+      activeTag = null;
+      node.style('opacity', 1);
+      link.style('opacity', 0.6);
+    } else {
+      activeTag = d.id;
+      const connected = new Set([d.id]);
+      data.links.forEach(l => {
+        if (l.source.id === d.id) connected.add(l.target.id);
+        if (l.target.id === d.id) connected.add(l.source.id);
+      });
+      node.style('opacity', n => connected.has(n.id) ? 1 : 0.15);
+      link.style('opacity', l => (l.source.id === d.id || l.target.id === d.id) ? 0.8 : 0.05);
+    }
+  });
+
+  // 10. Dblclick leaf = open URL
+  node.filter(d => d.kind === 'entry').on('dblclick', (e, d) => {
+    if (d.url) window.open(d.url, '_blank');
+  });
+
+  // 11. PITFALL: null out D3's default dblclick-to-zoom BEFORE binding our own
+  svg.on('dblclick.zoom', null);
+  svg.on('dblclick', () => {
+    svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity);
+  });
+})();
+</script>
+{% endblock %}

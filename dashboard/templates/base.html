@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page_title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #fafaf8;
+      --bg-card: #ffffff;
+      --bg-secondary: #f4f3ef;
+      --border: #e5e4e0;
+      --text: #2c2c2c;
+      --text-muted: #888;
+      --text-subtle: #aaa;
+      --radius: 6px;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-serif: 'Lora', Georgia, serif;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--text); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* ── Header ── */
+    .site-header {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 1.25rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .site-header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .site-brand { font-size: 1rem; font-weight: 500; color: var(--text); }
+    .nav-links { display: flex; gap: 0.2rem; list-style: none; }
+    .nav-links a {
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-links a:hover {
+      background: var(--bg-card);
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-links a.active { background: var(--bg-card); color: var(--text); }
+
+    /* ── Search ── */
+    .search-bar { margin: 1.5rem 0; }
+    .search-form { display: flex; gap: 0.5rem; }
+    .search-input {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-family: var(--font-body);
+      background: var(--bg-card);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-input:focus { border-color: var(--text-muted); }
+    .search-input::placeholder { color: var(--text-subtle); }
+    .search-btn {
+      padding: 0.65rem 1rem;
+      background: var(--text);
+      color: var(--bg-card);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-family: var(--font-body);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .search-btn:hover { opacity: 0.85; }
+
+    /* ── Day blocks ── */
+    .days-list { display: flex; flex-direction: column; gap: 2.25rem; }
+    .day-block__header {
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .day-block__date { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 500; }
+    .day-block__entries { display: flex; flex-direction: column; gap: 0.65rem; }
+
+    /* ── Entry card ── */
+    .entry-card {
+      display: flow-root;
+      padding: 0.85rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .entry-card:hover { border-color: #bbb; }
+    .entry-card.is-collapsed .entry-summary,
+    .entry-card.is-collapsed .entry-tags { display: none; }
+    .entry-header { display: flex; align-items: baseline; gap: 0.6rem; }
+    .entry-type {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      flex-shrink: 0;
+    }
+    .entry-title { font-weight: 400; font-size: 0.9rem; flex: 1; }
+    .entry-title a { color: inherit; }
+    .entry-title a:hover { color: var(--text-muted); }
+    .entry-summary { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.55; }
+    .entry-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem; }
+    .entry-tag {
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+      background: var(--bg-secondary);
+      padding: 0.08rem 0.45rem;
+      border-radius: 2rem;
+      font-weight: 400;
+    }
+    .entry-tag:hover { color: var(--text); }
+
+    /* ── Tags cloud ── */
+    .tags-cloud { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .tag-pill {
+      padding: 0.18rem 0.6rem;
+      background: var(--bg-secondary);
+      color: var(--text-subtle);
+      border-radius: 2rem;
+      font-size: 0.75rem;
+      font-weight: 400;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .tag-pill:hover { background: #ddd; text-decoration: none; }
+
+    /* ── Calendar ── */
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }
+    .calendar-nav button {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.35rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: var(--text);
+      font-family: var(--font-body);
+      transition: background 0.15s;
+    }
+    .calendar-nav button:hover { background: var(--bg-card); }
+    .calendar-nav .month-label { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 500; }
+    .calendar-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+      margin-bottom: 0.4rem;
+    }
+    .calendar-header span {
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .cal-day {
+      background: var(--bg-card);
+      min-height: 68px;
+      padding: 0.45rem;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .cal-day:hover { background: #f0f0ee; }
+    .cal-day.other-month { background: var(--bg); }
+    .cal-day.other-month .cal-day-number { color: var(--text-subtle); }
+    .cal-day.has-entries .cal-day-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--text);
+      color: var(--bg-card);
+      font-size: 0.72rem;
+      font-weight: 500;
+    }
+    .cal-day.today .cal-day-number { border: 1px solid var(--text); }
+    .cal-day-number { font-size: 0.8rem; color: var(--text); margin-bottom: 0.15rem; }
+
+    .day-entries-panel {
+      margin-top: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .day-entries-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7rem 1.1rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+    }
+    .day-entries-header:hover { background: #e8e7e3; }
+    .day-entries-title { font-family: var(--font-serif); font-size: 0.95rem; font-weight: 500; }
+    .day-entries-count { font-size: 0.78rem; color: var(--text-muted); }
+    .day-entries-panel { display: none; }
+    .day-entries-panel.is-open { display: block; }
+    .day-entries-panel.is-open .day-entries-list { display: flex; }
+    .day-entries-list {
+      display: none;
+      flex-direction: column;
+      gap: 0.6rem;
+      padding: 0.9rem 1.1rem;
+      background: var(--bg-card);
+    }
+
+    /* ── Graph ── */
+    .graph-header { padding: 1.5rem 0 0.75rem; }
+    .graph-header h1 { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 500; }
+    .graph-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .graph-legend { display: inline-flex; align-items: center; gap: 0.4rem; margin-left: auto; }
+    .legend-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1.5px solid #2c2c2c;
+    }
+    .legend-tag { background: #f4f3ef; }
+    .legend-entry { background: #888; border-color: #fff; box-shadow: 0 0 0 1px #888; }
+    #graph-container {
+      width: 100%;
+      height: calc(100vh - 240px);
+      min-height: 480px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      overflow: hidden;
+    }
+    #graph-container svg { display: block; }
+    .graph-hint {
+      margin-top: 0.6rem;
+      font-size: 0.75rem;
+      color: var(--text-subtle);
+      text-align: center;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 0;
+      margin-top: 3rem;
+      color: var(--text-subtle);
+      font-size: 0.78rem;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .cal-day { min-height: 46px; padding: 0.3rem; }
+      .nav-links { gap: 0; }
+      .site-header .container { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-brand">Archivio</a>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/" {% if current_page == 'archivio-list' %}class="active"{% endif %}>Elenco</a></li>
+          <li><a href="/calendar" {% if current_page == 'calendar' %}class="active"{% endif %}>Calendario</a></li>
+          <li><a href="/graph" {% if current_page == 'graph' %}class="active"{% endif %}>Graph</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+  {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      {{ total_entries }} link · {{ total_days }} giorni
+    </div>
+  </footer>
+
+  {% block calendar_script %}{% endblock %}
+</body>
+</html>

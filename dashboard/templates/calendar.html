@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+
+  <div class="search-bar">
+    <form class="search-form" action="/search" method="get">
+      <input type="text" name="q" class="search-input" placeholder="Cerca…" />
+      <button type="submit" class="search-btn">Cerca</button>
+    </form>
+  </div>
+
+  <div class="calendar-nav">
+    <button id="cal-prev">←</button>
+    <span class="month-label" id="cal-label"></span>
+    <button id="cal-next">→</button>
+  </div>
+
+  <div class="calendar-header">
+    <span>Lun</span><span>Mar</span><span>Mer</span><span>Gio</span><span>Ven</span><span>Sab</span><span>Dom</span>
+  </div>
+  <div class="calendar-grid" id="calendar-grid"></div>
+
+  <div id="day-panel"></div>
+
+</div>
+{% endblock %}
+
+{% block calendar_script %}
+<script>
+(function() {
+  const DAYS = {{ days_json | tojson }};
+  let currentYear, currentMonth;
+  const today = new Date();
+
+  function init(y, m) {
+    currentYear = y;
+    currentMonth = m;
+    render();
+  }
+
+  function render() {
+    document.getElementById('cal-label').textContent =
+      new Date(currentYear, currentMonth, 1)
+        .toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+
+    const grid = document.getElementById('calendar-grid');
+    grid.innerHTML = '';
+
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    let startDow = (firstDay.getDay() + 6) % 7;
+
+    const prevLast = new Date(currentYear, currentMonth, 0).getDate();
+    for (let i = startDow - 1; i >= 0; i--) {
+      grid.appendChild(makeCell(prevLast - i, true));
+    }
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      grid.appendChild(makeCell(d, false));
+    }
+    const totalCells = startDow + lastDay.getDate();
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let d = 1; d <= remaining; d++) {
+      grid.appendChild(makeCell(d, true));
+    }
+  }
+
+  function makeCell(day, other) {
+    const div = document.createElement('div');
+    div.className = 'cal-day' + (other ? ' other-month' : '');
+
+    const mm = String(currentMonth + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    const dateStr = currentYear + '-' + mm + '-' + dd;
+
+    const dayNum = document.createElement('div');
+    dayNum.className = 'cal-day-number';
+
+    const match = DAYS.find(function(d) { return d.date === dateStr; });
+    if (match) {
+      div.className += ' has-entries';
+      dayNum.textContent = match.count;
+    } else {
+      dayNum.textContent = day;
+    }
+
+    const isToday = !other && day === today.getDate() &&
+      currentMonth === today.getMonth() && currentYear === today.getFullYear();
+    if (isToday) div.className += ' today';
+
+    div.appendChild(dayNum);
+    if (!other && match) {
+      div.addEventListener('click', function() { showDayPanel(dateStr, match.label, match.count); });
+    }
+    return div;
+  }
+
+  function showDayPanel(dateStr, label, count) {
+    const panel = document.getElementById('day-panel');
+    panel.innerHTML = '';
+
+    const section = document.createElement('div');
+    section.className = 'day-entries-panel';
+
+    const header = document.createElement('div');
+    header.className = 'day-entries-header';
+    header.innerHTML = '<span class="day-entries-title">' + label + '</span>' +
+      '<span class="day-entries-count">' + count + ' link · chiudi</span>';
+    header.addEventListener('click', function() {
+      section.classList.remove('is-open');
+      setTimeout(function() { panel.innerHTML = ''; }, 200);
+    });
+
+    const list = document.createElement('div');
+    list.className = 'day-entries-list';
+
+    fetch('/day-json/' + dateStr)
+      .then(function(r) { return r.json(); })
+      .then(function(entries) {
+        entries.forEach(function(entry) { list.appendChild(makeEntryCard(entry)); });
+        section.classList.add('is-open');
+      });
+
+    section.appendChild(header);
+    section.appendChild(list);
+    panel.appendChild(section);
+    section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function makeEntryCard(entry) {
+    const article = document.createElement('article');
+    article.className = 'entry-card is-collapsed';
+
+    var header = document.createElement('div');
+    header.className = 'entry-header';
+
+    var type = document.createElement('span');
+    type.className = 'entry-type';
+    type.textContent = entry.entry_type || 'link';
+    header.appendChild(type);
+
+    var title = document.createElement('p');
+    title.className = 'entry-title';
+    if (entry.url) {
+      var a = document.createElement('a');
+      a.href = entry.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = entry.title;
+      title.appendChild(a);
+    } else {
+      title.textContent = entry.title;
+    }
+    header.appendChild(title);
+    article.appendChild(header);
+
+    if (entry.summary) {
+      var summary = document.createElement('p');
+      summary.className = 'entry-summary';
+      summary.textContent = entry.summary;
+      article.appendChild(summary);
+    }
+
+    if (entry.tags && entry.tags.length) {
+      var tagsDiv = document.createElement('div');
+      tagsDiv.className = 'entry-tags';
+      entry.tags.forEach(function(tag) {
+        var t = document.createElement('span');
+        t.className = 'entry-tag';
+        t.textContent = tag;
+        tagsDiv.appendChild(t);
+      });
+      article.appendChild(tagsDiv);
+    }
+
+    article.addEventListener('click', function(e) {
+      if (e.target.tagName === 'A') return;
+      article.classList.toggle('is-collapsed');
+      article.classList.toggle('is-expanded');
+    });
+
+    return article;
+  }
+
+  document.getElementById('cal-prev').addEventListener('click', function() {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    render();
+  });
+  document.getElementById('cal-next').addEventListener('click', function() {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    render();
+  });
+
+  init(today.getFullYear(), today.getMonth());
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+
+  <div class="search-bar">
+    <form class="search-form" action="/search" method="get">
+      <input type="text" name="q" class="search-input" placeholder="Cerca…" value="{{ query or '' }}" />
+      <button type="submit" class="search-btn">Cerca</button>
+    </form>
+  </div>
+
+  <div style="margin-bottom: 1.5rem;">
+    {% if query %}
+    <span style="font-size:0.9rem;color:var(--text-muted);">{{ results|length }} risultati per "{{ query }}"</span>
+    {% endif %}
+  </div>
+
+  {% if results %}
+  <div class="days-list">
+    {% for entry in results %}
+    <article class="entry-card is-collapsed">
+      <span class="entry-expand-icon">▾</span>
+      <div class="entry-header">
+        <span class="entry-type">{{ entry.entry_type }}</span>
+        <p class="entry-title">
+          {% if entry.url %}<a href="{{ entry.url }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">{{ entry.title }}</a>{% else %}{{ entry.title }}{% endif %}
+        </p>
+      </div>
+      {% if entry.summary %}<p class="entry-summary">{{ entry.summary }}</p>{% endif %}
+      {% if entry.tags %}
+      <div class="entry-tags">
+        {% for tag in entry.tags %}
+        <a href="/tag/{{ tag.lstrip('#') }}" class="entry-tag" onclick="event.stopPropagation()">{{ tag }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    {% if query %}Nessun risultato per "{{ query }}"{% else %}Nessun link trovato{% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

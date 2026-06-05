@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+
+  <div class="search-bar">
+    <form class="search-form" action="/search" method="get">
+      <input type="text" name="q" class="search-input" placeholder="Cerca…" />
+      <button type="submit" class="search-btn">Cerca</button>
+    </form>
+  </div>
+
+  {% if tags %}
+  <div class="tags-cloud" style="margin-bottom: 1.5rem;">
+    {% for tag, count in tags[:25] %}
+    <a href="/tag/{{ tag.lstrip('#') }}" class="tag-pill">{{ tag }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="days-list">
+    {% for day in days %}
+    <section class="day-block">
+      <div class="day-block__header">
+        <a href="/day/{{ day.date }}" class="day-block__date">{{ day.label }}</a>
+      </div>
+      <div class="day-block__entries">
+        {% for entry in day.entries %}
+        <article class="entry-card is-collapsed">
+          <div class="entry-header">
+            <span class="entry-type">{{ entry.entry_type }}</span>
+            <p class="entry-title">
+              {% if entry.url %}<a href="{{ entry.url }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">{{ entry.title }}</a>{% else %}{{ entry.title }}{% endif %}
+            </p>
+          </div>
+          {% if entry.summary %}<p class="entry-summary">{{ entry.summary }}</p>{% endif %}
+          {% if entry.tags %}
+          <div class="entry-tags">
+            {% for tag in entry.tags %}
+            <a href="/tag/{{ tag.lstrip('#') }}" class="entry-tag" onclick="event.stopPropagation()">{{ tag }}</a>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block calendar_script %}
+<script>
+document.querySelectorAll('.entry-card').forEach(function(card) {
+  card.addEventListener('click', function(e) {
+    if (e.target.tagName === 'A') return;
+    if (card.classList.contains('is-collapsed')) {
+      card.classList.remove('is-collapsed');
+      card.classList.add('is-expanded');
+    } else {
+      card.classList.remove('is-expanded');
+      card.classList.add('is-collapsed');
+    }
+  });
+});
+</script>
+{% endblock %}
