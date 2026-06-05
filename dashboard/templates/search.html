@@ -5,14 +5,14 @@
 
   <div class="search-bar">
     <form class="search-form" action="/search" method="get">
-      <input type="text" name="q" class="search-input" placeholder="Cerca…" value="{{ query or '' }}" />
-      <button type="submit" class="search-btn">Cerca</button>
+      <input type="text" name="q" class="search-input" placeholder="Search…" value="{{ query or '' }}" />
+      <button type="submit" class="search-btn">Search</button>
     </form>
   </div>
 
   <div style="margin-bottom: 1.5rem;">
     {% if query %}
-    <span style="font-size:0.9rem;color:var(--text-muted);">{{ results|length }} risultati per "{{ query }}"</span>
+    <span style="font-size:0.9rem;color:var(--text-muted);">{{ results|length }} results for "{{ query }}"</span>
     {% endif %}
   </div>
 
@@ -40,7 +40,7 @@
   </div>
   {% else %}
   <div class="empty-state">
-    {% if query %}Nessun risultato per "{{ query }}"{% else %}Nessun link trovato{% endif %}
+    {% if query %}No results for "{{ query }}"{% else %}No links found{% endif %}
   </div>
   {% endif %}
 

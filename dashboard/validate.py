@@ -1,4 +1,4 @@
-"""Validation utilities for archivio entries."""
+"""Validation utilities for link curator entries."""
 from __future__ import annotations
 
 import re
@@ -77,11 +77,11 @@ def validate_entry(block: str) -> ValidationResult:
 # Auto-discover vault path:
 # This file lives at <profile>/dashboard/validate.py
 # Vault lives at <profile>/vault
-# Override with $HERMES_ARCHIVIO_VAULT env var if needed.
+# Override with $HERMES_ARCHIVE_VAULT env var if needed.
 import os
 
 DEFAULT_VAULT = os.environ.get(
-    "HERMES_ARCHIVIO_VAULT",
+    "HERMES_ARCHIVE_VAULT",
     str(Path(__file__).resolve().parent.parent / "vault")
 )
 
@@ -117,7 +117,7 @@ def validate_vault(vault_path: str = None) -> dict:
     chunks = re.split(r'\n---\n', content)
 
     # Import parser
-    from archivio import _parse_entry, get_all_entries
+    from archive import _parse_entry, get_all_entries
 
     for i, chunk in enumerate(chunks):
         if not re.search(r'\*\*URL\*\*', chunk):

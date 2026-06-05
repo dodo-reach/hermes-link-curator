@@ -9,19 +9,19 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from archivio import get_all_entries, get_entries_by_date, get_tags, search_entries, clear_cache, get_graph_data
+from archive import get_all_entries, get_entries_by_date, get_tags, search_entries, clear_cache, get_graph_data
 
 BASE_DIR = Path(__file__).resolve().parent
 # Auto-discover vault path:
 # This file lives at <profile>/dashboard/main.py
 # Vault lives at <profile>/vault
-# Override with $HERMES_ARCHIVIO_VAULT env var if needed.
+# Override with $HERMES_ARCHIVE_VAULT env var if needed.
 VAULT_PATH = os.environ.get(
-    "HERMES_ARCHIVIO_VAULT",
+    "HERMES_ARCHIVE_VAULT",
     str(Path(__file__).resolve().parent.parent / "vault")
 )
-PORT = int(os.environ.get("ARCHIVIO_PORT", "8090"))
-HOST = os.environ.get("ARCHIVIO_HOST", "127.0.0.1")
+PORT = int(os.environ.get("ARCHIVE_PORT", "8090"))
+HOST = os.environ.get("ARCHIVE_HOST", "127.0.0.1")
 
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
@@ -33,7 +33,7 @@ def build_tags_context() -> dict:
 
 # ─── FastAPI app ─────────────────────────────────────────────────────────────
 
-app = FastAPI(title="Archivio", description="Link curator archive")
+app = FastAPI(title="Archive", description="Link curator archive")
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
@@ -45,8 +45,8 @@ async def home(request: Request) -> HTMLResponse:
     days = get_entries_by_date()
     ctx = {
         "request": request,
-        "page_title": "Archivio",
-        "current_page": "archivio-list",
+        "page_title": "Archive",
+        "current_page": "archive-list",
         "total_entries": len(get_all_entries()),
         "total_days": len(days),
         "generated_at": "",
@@ -61,7 +61,7 @@ async def calendar(request: Request) -> HTMLResponse:
     days = get_entries_by_date()
     ctx = {
         "request": request,
-        "page_title": "Archivio - Calendar",
+        "page_title": "Archive - Calendar",
         "current_page": "calendar",
         "total_entries": len(get_all_entries()),
         "total_days": len(days),
@@ -85,7 +85,7 @@ async def search(request: Request, q: str = "") -> HTMLResponse:
 
     ctx = {
         "request": request,
-        "page_title": "Archivio - Search",
+        "page_title": "Archive - Search",
         "current_page": "search",
         "total_entries": len(get_all_entries()),
         "total_days": len(get_entries_by_date()),
@@ -103,7 +103,7 @@ async def by_tag(request: Request, tag: str) -> HTMLResponse:
     entries = search_entries(f"#{tag}")
     ctx = {
         "request": request,
-        "page_title": f"Archivio - #{tag}",
+        "page_title": f"Archive - #{tag}",
         "current_page": "tag",
         "total_entries": len(get_all_entries()),
         "total_days": len(get_entries_by_date()),
@@ -121,7 +121,7 @@ async def by_day(request: Request, date: str) -> HTMLResponse:
     day_data = next((d for d in all_days if d.date == date), None)
     ctx = {
         "request": request,
-        "page_title": f"Archivio - {date}",
+        "page_title": f"Archive - {date}",
         "current_page": "day",
         "total_entries": len(get_all_entries()),
         "total_days": len(all_days),
@@ -173,7 +173,7 @@ async def graph(request: Request) -> HTMLResponse:
     data = get_graph_data()
     ctx = {
         "request": request,
-        "page_title": "Archivio - Graph",
+        "page_title": "Archive - Graph",
         "current_page": "graph",
         "total_entries": len(get_all_entries()),
         "total_days": len(get_entries_by_date()),

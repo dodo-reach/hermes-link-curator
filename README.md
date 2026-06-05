@@ -68,7 +68,7 @@ The dashboard binds to `127.0.0.1` by default. To make it reachable from your iP
 
 ```bash
 cd ~/.hermes/profiles/<profile-name>/dashboard
-ARCHIVIO_HOST=0.0.0.0 ./start.sh 8090
+ARCHIVE_HOST=0.0.0.0 ./start.sh 8090
 ```
 
 Then open `http://<your-mac-ip>:8090` from Safari on iPhone.
@@ -80,7 +80,7 @@ Once the dashboard is reachable from your iPhone:
 1. Open the dashboard URL in Safari.
 2. Tap the Share button.
 3. Tap **Add to Home Screen**.
-4. Name it `Archivio` or `Hermes Links`.
+4. Name it `Archive` or `Hermes Links`.
 
 From then on, you can launch the archive from your Home Screen like a small private app.
 
@@ -90,7 +90,7 @@ For access outside your home network, use [Tailscale](https://tailscale.com/) in
 
 1. Install Tailscale on the Mac running Hermes and on your iPhone.
 2. Sign both devices into the same tailnet.
-3. Start the dashboard with `ARCHIVIO_HOST=0.0.0.0`.
+3. Start the dashboard with `ARCHIVE_HOST=0.0.0.0`.
 4. On iPhone, open `http://<mac-tailscale-name>:8090` or `http://<mac-tailscale-ip>:8090`.
 5. Add that page to the Home Screen from Safari.
 
@@ -124,7 +124,7 @@ Everything lives under `~/.hermes/profiles/<profile-name>/`. Path auto-discovery
 │   └── link-curator-dashboard/        # dashboard maintenance
 └── dashboard/                         # the FastAPI web app
     ├── main.py
-    ├── archivio.py                    # vault parser
+    ├── archive.py                     # vault parser
     ├── validate.py                    # integrity checker
     └── start.sh                       # launcher
 ```

@@ -1,6 +1,6 @@
 {
-  "name": "Archivio",
-  "short_name": "Archivio",
+  "name": "Archive",
+  "short_name": "Archive",
   "description": "Private Hermes link archive dashboard",
   "start_url": "/",
   "scope": "/",

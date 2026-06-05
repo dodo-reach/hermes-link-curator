@@ -17,7 +17,7 @@ FastAPI app that serves a read-only Obsidian-style web UI over a markdown vault.
 
 Auto-discovery: the script computes the vault path as `<this-file>/../../vault`. So if you copy the dashboard to `<profile-dir>/dashboard/`, the vault is automatically `<profile-dir>/vault/`.
 
-Override with `$HERMES_ARCHIVIO_VAULT` if the vault lives somewhere else.
+Override with `$HERMES_ARCHIVE_VAULT` if the vault lives somewhere else.
 
 ## Run
 

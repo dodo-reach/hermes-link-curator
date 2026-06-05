@@ -2,9 +2,9 @@
 name: link-curator-dashboard
 description: Maintain and debug the link-curator web dashboard (port 8090). Separate process from the official Hermes dashboard.
 triggers:
-  - archivio dashboard not loading
+  - archive dashboard not loading
   - port 8090
-  - archivio-dashboard
+  - archive-dashboard
   - graph view
   - d3 force graph
 ---
@@ -42,7 +42,7 @@ readlink /proc/<pid>/cwd
 |-----------|------|
 | Dashboard app | `<profile-dir>/dashboard/` |
 | Main app entry | `<profile-dir>/dashboard/main.py` |
-| Vault parser | `<profile-dir>/dashboard/archivio.py` |
+| Vault parser | `<profile-dir>/dashboard/archive.py` |
 | Templates | `<profile-dir>/dashboard/templates/` |
 | Vault | `<profile-dir>/vault/` |
 
@@ -64,7 +64,7 @@ readlink /proc/<pid>/cwd
 
 ## Caching — automatic
 
-`archivio.py` uses **mtime-based invalidation** — no `lru_cache`, no manual invalidation needed:
+`archive.py` uses **mtime-based invalidation** — no `lru_cache`, no manual invalidation needed:
 
 1. On every request, `get_all_entries()` checks the `mtime` of `INDEX.md`
 2. If the file hasn't changed → returns cached entries (fast)
@@ -155,7 +155,7 @@ Expected: `Has errors: 0`, `Fully valid: N` matching vault entry count.
 ## Graph view
 
 The `/graph` endpoint renders a D3.js force-directed graph over the vault. Data
-is built by `get_graph_data()` in `archivio.py` and exposed via `/graph-json`.
+is built by `get_graph_data()` in `archive.py` and exposed via `/graph-json`.
 
 **Data shape** (tag-graph, two node kinds):
 - `nodes`: `{id, label, kind: "tag"|"entry", count, type?, url?}`
@@ -187,7 +187,7 @@ For any new page that needs the same nav + footer as the rest of the dashboard:
 2. Add `current_page` string in the template context
 3. Add a nav link in `templates/base.html` (use `{% if current_page == '<name>' %}`)
 4. Add CSS to the bottom of `base.html` if it needs styles
-5. Add a function in `archivio.py` if it parses the vault
+5. Add a function in `archive.py` if it parses the vault
 6. Validate + restart
 
 ## Common failure modes
@@ -195,7 +195,7 @@ For any new page that needs the same nav + footer as the rest of the dashboard:
 1. **Dashboard shows fewer entries than expected** — run validate.py; if health count matches vault count, the server is fine — the issue is browser-side
 2. **Old process still running on 8090** — new start fails because port is occupied. Always kill first.
 3. **Browser cache** — after any fix, always try `Ctrl+Shift+R` or incognito. The dashboard is read-heavy and browsers aggressively cache it.
-4. **INDEX.md entries missing (root cause: write_file overwrite)** — the archivio agent may have used `write_file` directly on INDEX.md without reading it first, wiping all previous entries. If only June entries show, May is gone. Fix: rebuild from daily notes using `scripts/rebuild_index.py` (see below). Prevention: use `save_entry.py` from the `obsidian` skill for all new saves — it does atomic read+patch, never full overwrite.
+4. **INDEX.md entries missing (root cause: write_file overwrite)** — the link-curator agent may have used `write_file` directly on INDEX.md without reading it first, wiping all previous entries. If only June entries show, May is gone. Fix: rebuild from daily notes using `scripts/rebuild_index.py` (see below). Prevention: use `save_entry.py` from the `obsidian` skill for all new saves — it does atomic read+patch, never full overwrite.
 
 ## Rebuild INDEX.md from daily notes
 

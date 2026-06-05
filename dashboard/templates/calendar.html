@@ -5,8 +5,8 @@
 
   <div class="search-bar">
     <form class="search-form" action="/search" method="get">
-      <input type="text" name="q" class="search-input" placeholder="Cerca…" />
-      <button type="submit" class="search-btn">Cerca</button>
+      <input type="text" name="q" class="search-input" placeholder="Search…" />
+      <button type="submit" class="search-btn">Search</button>
     </form>
   </div>
 
@@ -17,7 +17,7 @@
   </div>
 
   <div class="calendar-header">
-    <span>Lun</span><span>Mar</span><span>Mer</span><span>Gio</span><span>Ven</span><span>Sab</span><span>Dom</span>
+    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
   </div>
   <div class="calendar-grid" id="calendar-grid"></div>
 
@@ -42,7 +42,7 @@
   function render() {
     document.getElementById('cal-label').textContent =
       new Date(currentYear, currentMonth, 1)
-        .toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+        .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
     const grid = document.getElementById('calendar-grid');
     grid.innerHTML = '';
@@ -105,7 +105,7 @@
     const header = document.createElement('div');
     header.className = 'day-entries-header';
     header.innerHTML = '<span class="day-entries-title">' + label + '</span>' +
-      '<span class="day-entries-count">' + count + ' link · chiudi</span>';
+      '<span class="day-entries-count">' + count + ' links · close</span>';
     header.addEventListener('click', function() {
       section.classList.remove('is-open');
       setTimeout(function() { panel.innerHTML = ''; }, 200);

@@ -7,14 +7,14 @@ triggers:
   - add to vault
   - link curator
   - user sends an URL/link
-  - user says save/archivia/salva/add to vault
+  - user says save/archive/add to vault
 ---
 
 # Obsidian Vault — Link Curator Skill
 
 ## Behavior — do not summarize, archive
 
-When the user sends a URL or asks to save/archiviare something: **archive it immediately, do not summarize**. Your job is that of a librarian: receive → process → file. Not a chatbot to give impressions.
+When the user sends a URL or asks to save/archive something: **archive it immediately, do not summarize**. Your job is that of a librarian: receive → process → file. Not a chatbot to give impressions.
 
 Do NOT respond with a summary of the content unless the user explicitly asks for one. Archive first, then say only "Salvato." (or the error, if any).
 

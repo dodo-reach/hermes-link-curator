@@ -1,13 +1,13 @@
 # Graph view — D3 force-directed over the vault
 
-The archivio dashboard exposes `/graph` (HTML) and `/graph-json` (data). The
+The archive dashboard exposes `/graph` (HTML) and `/graph-json` (data). The
 front-end is D3 v7 loaded from CDN — no `npm install`, no build step. This
 document captures the reusable pieces so a future agent can rebuild or extend
 the view without rediscovering the tuning.
 
 ## Data shape
 
-`get_graph_data()` in `archivio.py` returns:
+`get_graph_data()` in `archive.py` returns:
 
 ```json
 {

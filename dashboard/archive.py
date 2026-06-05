@@ -1,4 +1,4 @@
-"""Archivio — lightweight link curator web app."""
+"""Archive parser for the lightweight link curator web app."""
 from __future__ import annotations
 
 import logging
@@ -14,17 +14,17 @@ logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 # Auto-discover vault path:
-# This file lives at <profile>/dashboard/archivio.py
+# This file lives at <profile>/dashboard/archive.py
 # Vault lives at <profile>/vault
-# Override with $HERMES_ARCHIVIO_VAULT env var if needed.
+# Override with $HERMES_ARCHIVE_VAULT env var if needed.
 VAULT_PATH = Path(os.environ.get(
-    "HERMES_ARCHIVIO_VAULT",
+    "HERMES_ARCHIVE_VAULT",
     Path(__file__).resolve().parent.parent / "vault"
 ))
 
 
 @dataclass
-class ArchivioEntry:
+class ArchiveEntry:
     title: str
     url: str
     entry_type: str
@@ -37,13 +37,13 @@ class ArchivioEntry:
 
 
 @dataclass
-class ArchivioDay:
+class ArchiveDay:
     date: str
     label: str
-    entries: list[ArchivioEntry] = field(default_factory=list)
+    entries: list[ArchiveEntry] = field(default_factory=list)
 
 
-def _parse_entry(block: str, file: str = "INDEX.md") -> Optional[ArchivioEntry]:
+def _parse_entry(block: str, file: str = "INDEX.md") -> Optional[ArchiveEntry]:
     """Parse a single entry block. Returns None if critical fields are missing."""
     title_m = re.search(r'^###\s+([^\n—]+?)\s+—\s+', block, re.MULTILINE)
     if not title_m:
@@ -70,7 +70,7 @@ def _parse_entry(block: str, file: str = "INDEX.md") -> Optional[ArchivioEntry]:
     summary = summary_m.group(1).strip() if summary_m else ""
     summary = re.sub(r'^\s+', '', summary)
 
-    return ArchivioEntry(
+    return ArchiveEntry(
         title=title,
         url=url_m.group(1).strip() if url_m else "",
         entry_type=type_m.group(1).strip() if type_m else "other",
@@ -85,12 +85,12 @@ def _parse_entry(block: str, file: str = "INDEX.md") -> Optional[ArchivioEntry]:
 
 # ─── Cache with explicit mtime-based invalidation ─────────────────────────────────
 
-_cache: list[ArchivioEntry] = []
+_cache: list[ArchiveEntry] = []
 _cache_mtime: float = 0.0
 _cache_valid: bool = False
 
 
-def get_all_entries() -> list[ArchivioEntry]:
+def get_all_entries() -> list[ArchiveEntry]:
     """Get all entries from INDEX.md.
     
     Automatically reloads when INDEX.md mtime changes.
@@ -143,10 +143,10 @@ def get_all_entries() -> list[ArchivioEntry]:
     return _cache
 
 
-def get_entries_by_date() -> list[ArchivioDay]:
+def get_entries_by_date() -> list[ArchiveDay]:
     """Get entries grouped by date. Uses cached get_all_entries()."""
     entries = get_all_entries()
-    by_date: dict[str, list[ArchivioEntry]] = {}
+    by_date: dict[str, list[ArchiveEntry]] = {}
     for e in entries:
         by_date.setdefault(e.added, []).append(e)
 
@@ -154,7 +154,7 @@ def get_entries_by_date() -> list[ArchivioDay]:
     for date in sorted(by_date.keys(), reverse=True):
         d = datetime.strptime(date, "%Y-%m-%d")
         label = d.strftime("%d %b %Y").lstrip("0")  # "14 May 2026"
-        days.append(ArchivioDay(date=date, label=label, entries=by_date[date]))
+        days.append(ArchiveDay(date=date, label=label, entries=by_date[date]))
 
     return days
 
@@ -169,7 +169,7 @@ def get_tags() -> list[tuple[str, int]]:
     return sorted(counts.items(), key=lambda x: -x[1])
 
 
-def search_entries(query: str) -> list[ArchivioEntry]:
+def search_entries(query: str) -> list[ArchiveEntry]:
     """Search entries by title, summary, or tags. Uses cached entries."""
     q = query.lower()
     results = []

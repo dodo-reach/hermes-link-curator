@@ -3,7 +3,7 @@
 Rebuild INDEX.md from all daily note files.
 Use when INDEX.md was overwritten and entries are missing.
 
-Auto-discovers the vault path. Optionally override with $HERMES_ARCHIVIO_VAULT.
+Auto-discovers the vault path. Optionally override with $HERMES_ARCHIVE_VAULT.
 """
 import re
 from pathlib import Path
@@ -11,10 +11,10 @@ from pathlib import Path
 # Auto-discover vault path:
 # This script lives at <profile>/skills/note-taking/obsidian/scripts/rebuild_index.py
 # Vault lives at <profile>/vault
-# Override with $HERMES_ARCHIVIO_VAULT env var if needed.
+# Override with $HERMES_ARCHIVE_VAULT env var if needed.
 import os
 VAULT = Path(os.environ.get(
-    "HERMES_ARCHIVIO_VAULT",
+    "HERMES_ARCHIVE_VAULT",
     Path(__file__).resolve().parent.parent.parent.parent / "vault"
 ))
 INDEX = VAULT / "INDEX.md"

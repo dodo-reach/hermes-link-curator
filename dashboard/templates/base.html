@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#fafaf8" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Archivio" />
+  <meta name="apple-mobile-web-app-title" content="Archive" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>{{ page_title }}</title>
   <link rel="manifest" href="/static/manifest.webmanifest" />
@@ -332,11 +332,11 @@
 <body>
   <header class="site-header">
     <div class="container">
-      <a href="/" class="site-brand">Archivio</a>
+      <a href="/" class="site-brand">Archive</a>
       <nav>
         <ul class="nav-links">
-          <li><a href="/" {% if current_page == 'archivio-list' %}class="active"{% endif %}>Elenco</a></li>
-          <li><a href="/calendar" {% if current_page == 'calendar' %}class="active"{% endif %}>Calendario</a></li>
+          <li><a href="/" {% if current_page == 'archive-list' %}class="active"{% endif %}>List</a></li>
+          <li><a href="/calendar" {% if current_page == 'calendar' %}class="active"{% endif %}>Calendar</a></li>
           <li><a href="/graph" {% if current_page == 'graph' %}class="active"{% endif %}>Graph</a></li>
         </ul>
       </nav>
@@ -349,7 +349,7 @@
 
   <footer class="site-footer">
     <div class="container">
-      {{ total_entries }} link · {{ total_days }} giorni
+      {{ total_entries }} links · {{ total_days }} days
     </div>
   </footer>
 

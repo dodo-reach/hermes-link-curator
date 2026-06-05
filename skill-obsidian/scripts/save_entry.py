@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Atomic save for archivio vault entries.
+Atomic save for link curator vault entries.
 Appends to daily note AND prepends to INDEX.md using read+patch (never overwrite).
 
 Usage:
@@ -20,9 +20,9 @@ from urllib.parse import urlparse
 # Auto-discover vault path:
 # This script lives at <profile>/skills/note-taking/obsidian/scripts/save_entry.py
 # Vault lives at <profile>/vault
-# Override with $HERMES_ARCHIVIO_VAULT env var if needed.
+# Override with $HERMES_ARCHIVE_VAULT env var if needed.
 VAULT = Path(os.environ.get(
-    "HERMES_ARCHIVIO_VAULT",
+    "HERMES_ARCHIVE_VAULT",
     Path(__file__).resolve().parent.parent.parent.parent / "vault"
 ))
 INDEX = VAULT / "INDEX.md"
@@ -30,7 +30,7 @@ INDEX_HEADER = "# Index\n---\n"
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Atomically save an entry to the archivio vault.")
+    p = argparse.ArgumentParser(description="Atomically save an entry to the link curator vault.")
     p.add_argument("--url", required=True, help="Entry URL")
     p.add_argument("--title", required=True, help="Entry title")
     p.add_argument("--type", required=True, help="Entry type: github|x-post|article|tool|video|paper|other")
