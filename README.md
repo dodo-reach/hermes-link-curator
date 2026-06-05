@@ -88,7 +88,7 @@ From then on, you can launch the archive from your Home Screen like a small priv
 
 For access outside your home network, use [Tailscale](https://tailscale.com/) instead of exposing the dashboard to the public internet:
 
-1. Install Tailscale on the Mac running Hermes and on your iPhone.
+1. Install Tailscale on the hardware running Hermes and on your iPhone.
 2. Sign both devices into the same tailnet.
 3. Start the dashboard with `ARCHIVE_HOST=0.0.0.0`.
 4. On iPhone, open `http://<mac-tailscale-name>:8090` or `http://<mac-tailscale-ip>:8090`.
