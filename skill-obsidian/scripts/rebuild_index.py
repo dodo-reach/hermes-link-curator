@@ -15,7 +15,7 @@ from pathlib import Path
 import os
 VAULT = Path(os.environ.get(
     "HERMES_ARCHIVE_VAULT",
-    Path(__file__).resolve().parent.parent.parent.parent / "vault"
+    Path(__file__).resolve().parent.parent.parent.parent.parent / "vault"
 ))
 INDEX = VAULT / "INDEX.md"
 

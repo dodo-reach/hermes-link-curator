@@ -23,7 +23,7 @@ from urllib.parse import urlparse
 # Override with $HERMES_ARCHIVE_VAULT env var if needed.
 VAULT = Path(os.environ.get(
     "HERMES_ARCHIVE_VAULT",
-    Path(__file__).resolve().parent.parent.parent.parent / "vault"
+    Path(__file__).resolve().parent.parent.parent.parent.parent / "vault"
 ))
 INDEX = VAULT / "INDEX.md"
 INDEX_HEADER = "# Index\n---\n"
