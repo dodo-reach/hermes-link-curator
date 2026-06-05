@@ -77,10 +77,10 @@ The dashboard has **no watchdog** and dies silently (e.g. after a system reboot)
 >
 > ```bash
 > # WRONG — will be rejected:
-> cd <profile-dir>/dashboard && nohup python3 -m uvicorn main:app --host 0.0.0.0 --port 8090 &
+> cd <profile-dir>/dashboard && nohup python3 -m uvicorn main:app --host 127.0.0.1 --port 8090 &
 >
 > # CORRECT — terminal(background=true):
-> cd <profile-dir>/dashboard && python3 -m uvicorn main:app --host 0.0.0.0 --port 8090
+> cd <profile-dir>/dashboard && python3 -m uvicorn main:app --host 127.0.0.1 --port 8090
 > ```
 
 After starting, verify readiness:

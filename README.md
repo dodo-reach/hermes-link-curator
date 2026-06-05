@@ -14,7 +14,7 @@ The agent receives links → fetches content → writes entries to a local markd
 
 Send your Hermes agent a message like:
 
-> *Install https://github.com/Edoardo-Fitymi/hermes-link-curator — follow the AGENT_GUIDE.md.*
+> *Install https://github.com/dodo-reach/hermes-link-curator — follow the AGENT_GUIDE.md.*
 
 The agent will read `AGENT_GUIDE.md`, create a new profile, copy the pieces, and start the dashboard. You can then start archiving:
 
@@ -68,7 +68,7 @@ The base install gets you archiving. Two more steps are documented in `AGENT_GUI
 
 ## Acknowledgments
 
-Built by [Edoardo Fitymi](https://github.com/Edoardo-Fitymi) as a personal system, packaged for the Hermes community. Powered by [Hermes Agent](https://github.com/NousResearch/hermes-agent) by Nous Research.
+Built by [dodo-reach](https://github.com/dodo-reach) as a personal system, packaged for the Hermes community. Powered by [Hermes Agent](https://github.com/NousResearch/hermes-agent) by Nous Research.
 
 ## License
 

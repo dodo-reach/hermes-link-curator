@@ -20,7 +20,8 @@ VAULT_PATH = os.environ.get(
     "HERMES_ARCHIVIO_VAULT",
     str(Path(__file__).resolve().parent.parent / "vault")
 )
-PORT = int(os.environ.get("ARCHIVIO_PORT", os.environ.get("ARCHVIO_PORT", "8090")))
+PORT = int(os.environ.get("ARCHIVIO_PORT", "8090"))
+HOST = os.environ.get("ARCHIVIO_HOST", "127.0.0.1")
 
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
@@ -215,4 +216,4 @@ async def reload_cache() -> JSONResponse:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    uvicorn.run(app, host=HOST, port=PORT)

@@ -29,7 +29,7 @@ Set `REPO_DIR` to wherever this repo was cloned (the user likely cloned it befor
 If you had to clone it yourself:
 
 ```bash
-git clone https://github.com/Edoardo-Fitymi/hermes-link-curator.git /tmp/hermes-link-curator
+git clone https://github.com/dodo-reach/hermes-link-curator.git /tmp/hermes-link-curator
 REPO_DIR=/tmp/hermes-link-curator
 ```
 
@@ -115,7 +115,15 @@ else
 fi
 
 # Rewrite the python invocation in start.sh
-sed -i "s|^python3 -m uvicorn|$PY -m uvicorn|" "$START_SH"
+python3 - "$START_SH" "$PY" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+python = sys.argv[2]
+content = path.read_text()
+path.write_text(content.replace("exec python3 -m uvicorn", f"exec {python} -m uvicorn"))
+PY
 chmod +x "$START_SH"
 cat "$START_SH"
 ```
@@ -167,7 +175,7 @@ Tell the user:
 
 > *Setup complete. Test it:*
 > *1. Open http://localhost:8090 — dashboard should be empty*
-> *2. In the agent chat, send: `archive https://github.com/Edoardo-Fitymi/hermes-link-curator`*
+> *2. In the agent chat, send: `archive https://github.com/dodo-reach/hermes-link-curator`*
 > *3. Refresh the dashboard — your test entry should appear*
 
 If the test save fails, the most common cause is the agent not picking up the SOUL. Verify with `cat ~/.hermes/profiles/<PROFILE_NAME>/SOUL.md` — it should describe a librarian. If needed, the user can `/reset` to reload the skill + SOUL.
@@ -189,7 +197,7 @@ The base install works. Two more levels, on demand.
 
 The base `obsidian` skill has web search and `web_extract`. If the user wants to archive X/Twitter posts, paywalled articles, or JS-heavy sites, they need:
 
-- **camofox** — anti-detection browser. Install: `hermes skills install https://raw.githubusercontent.com/Edoardo-Fitymi/camofox-skill/main/SKILL.md`
+- **camofox** — anti-detection browser. Install: `hermes skills install https://raw.githubusercontent.com/dodo-reach/camofox-skill/main/SKILL.md`
 - **Playwright MCP** — JS rendering. Install: `hermes mcp add playwright -- npx -y @playwright/mcp@latest`
 
 Then ask the user to test by sending an X post URL.

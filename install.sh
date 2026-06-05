@@ -73,7 +73,15 @@ fi
 
 # 7. Patch start.sh
 START_SH="$PROFILE_DIR/dashboard/start.sh"
-sed -i "s|^python3 -m uvicorn|$PY -m uvicorn|" "$START_SH"
+python3 - "$START_SH" "$PY" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+python = sys.argv[2]
+content = path.read_text()
+path.write_text(content.replace("exec python3 -m uvicorn", f"exec {python} -m uvicorn"))
+PY
 chmod +x "$START_SH"
 
 # 8. Install SOUL
@@ -101,7 +109,7 @@ if curl -s --max-time 3 "http://localhost:$DASHBOARD_PORT/health" | grep -q "hea
     echo " Next steps:"
     echo "   1. (Optional) Edit $PROFILE_DIR/SOUL.md to customize"
     echo "   2. Start the link-curator agent:  hermes -p $PROFILE_NAME"
-    echo "   3. Send: archive https://github.com/Edoardo-Fitymi/hermes-link-curator"
+    echo "   3. Send: archive https://github.com/dodo-reach/hermes-link-curator"
     echo "   4. Refresh the dashboard to see your first entry"
 else
     echo
