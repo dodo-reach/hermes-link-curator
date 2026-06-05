@@ -6,7 +6,7 @@ A **link curator profile pack** for [Hermes Agent](https://github.com/NousResear
 
 [![Hermes Link Curator dashboard running on iPhone](assets/dashboard-preview.gif)](assets/dashboard-preview.mp4)
 
-The preview autoplays in GitHub and shows the full recording at 2x speed. Click it to open the original MP4. The archive is just a local web app, so it works well on desktop and mobile: list view, calendar, search, tags, day pages, graph view, and JSON stats all read from the same markdown vault.
+The archive is just a local web app, so it works well on desktop and mobile: list view, calendar, search, tags, day pages, graph view, and JSON stats all read from the same markdown vault.
 
 ## What this is
 
