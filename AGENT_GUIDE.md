@@ -201,7 +201,13 @@ The base install works. Two more levels, on demand.
 
 The base `obsidian` skill has web search and `web_extract`. If the user wants to archive X/Twitter posts, login-gated pages, or JS-heavy sites, they need:
 
-- **camofox** — browser-based fetcher for pages that need an existing session. Install: `hermes skills install https://raw.githubusercontent.com/dodo-reach/camofox-skill/main/SKILL.md`
+- **Camofox local mode** — browser-based fetching through Hermes' built-in Browser Automation support. Camofox is not a Hermes skill; install the browser server from the upstream repo:
+  ```bash
+  git clone https://github.com/jo-inc/camofox-browser
+  cd camofox-browser
+  make up
+  ```
+  Then set `CAMOFOX_URL=http://localhost:9377` in `~/.hermes/.env`, or choose **Browser Automation -> Camofox** in `hermes tools`. See the Hermes browser guide: https://hermes-agent.nousresearch.com/docs/user-guide/features/browser
 - **Playwright MCP** — JS rendering. Install: `hermes mcp add playwright -- npx -y @playwright/mcp@latest`
 
 Then ask the user to test by sending an X post URL.
