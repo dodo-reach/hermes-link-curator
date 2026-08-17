@@ -34,8 +34,12 @@
 
   // 2. Set up SVG container
   const container = document.getElementById('graph-container');
-  const width = container.clientWidth;
-  const height = Math.max(560, window.innerHeight - 240);
+  let width = container.clientWidth;
+  let height = Math.max(560, window.innerHeight - 240);
+
+  // Capture string IDs before forceLink replaces link endpoints with node objects.
+  const linkedEntryIds = new Set(data.links.map(d => d.target));
+  const standaloneCenterStrength = 0.04;
 
   const svg = d3.select('#graph-container').append('svg')
     .attr('width', width)
@@ -101,6 +105,11 @@
       : `${d.label}${d.url ? '\n' + d.url : ''}`);
 
   // 7. Force simulation — see references/graph-view.md for tuning
+  const centerForce = d3.forceCenter(width / 2, height / 2);
+  const standaloneX = d3.forceX(width / 2)
+    .strength(d => d.kind === 'entry' && !linkedEntryIds.has(d.id) ? standaloneCenterStrength : 0);
+  const standaloneY = d3.forceY(height / 2)
+    .strength(d => d.kind === 'entry' && !linkedEntryIds.has(d.id) ? standaloneCenterStrength : 0);
   const sim = d3.forceSimulation(data.nodes)
     .force('link', d3.forceLink(data.links)
       .id(d => d.id)
@@ -108,7 +117,9 @@
       .strength(0.6))
     .force('charge', d3.forceManyBody()
       .strength(d => d.kind === 'tag' ? -180 : -30))
-    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('center', centerForce)
+    .force('standalone-x', standaloneX)
+    .force('standalone-y', standaloneY)
     .force('collision', d3.forceCollide()
       .radius(d => d.kind === 'tag' ? 32 : 8))
     .on('tick', () => {
@@ -120,7 +131,21 @@
       node.attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
-  // 8. Drag — hub nodes unfix on release, leaves stay put
+  function resizeGraph() {
+    const nextWidth = container.clientWidth;
+    const nextHeight = Math.max(560, window.innerHeight - 240);
+    if (nextWidth === width && nextHeight === height) return;
+    width = nextWidth;
+    height = nextHeight;
+    svg.attr('width', width).attr('height', height);
+    centerForce.x(width / 2).y(height / 2);
+    standaloneX.x(width / 2);
+    standaloneY.y(height / 2);
+    sim.alpha(0.2).restart();
+  }
+  window.addEventListener('resize', resizeGraph);
+
+  // 8. Drag — entries stay pinned where dropped; tag hubs rejoin the simulation
   const drag = d3.drag()
     .on('start', (e, d) => {
       if (!e.active) sim.alphaTarget(0.3).restart();
@@ -129,7 +154,7 @@
     .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
     .on('end', (e, d) => {
       if (!e.active) sim.alphaTarget(0);
-      if (d.kind === 'entry') { d.fx = null; d.fy = null; }
+      if (d.kind === 'tag') { d.fx = null; d.fy = null; }
     });
   node.call(drag);
 

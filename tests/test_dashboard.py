@@ -513,6 +513,196 @@ def test_vendored_d3_version_and_checksum() -> None:
     assert (bundle.parent / "LICENSE.d3.txt").is_file()
 
 
+def test_graph_keeps_singleton_only_entry_but_hides_its_tag(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    vault = tmp_path / "vault"
+    write_index(vault, entry_block("Bananas", tags="#bananas"))
+    _, _, client = make_dashboard_client(monkeypatch, vault)
+
+    graph = client.get("/graph-json")
+
+    assert graph.status_code == 200
+    data = graph.json()
+    assert [node["label"] for node in data["nodes"] if node["kind"] == "entry"] == ["Bananas"]
+    assert [node for node in data["nodes"] if node["kind"] == "tag"] == []
+    assert data["links"] == []
+
+
+def test_graph_returns_all_entries_when_all_tags_are_singletons_or_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    vault = tmp_path / "vault"
+    write_index(
+        vault,
+        entry_block("Bananas", tags="#bananas", url="https://example.com/bananas"),
+        entry_block("Pears", tags="#pears", url="https://example.com/pears"),
+        entry_block("Untagged", tags="", url="https://example.com/untagged"),
+    )
+    _, _, client = make_dashboard_client(monkeypatch, vault)
+
+    data = client.get("/graph-json").json()
+
+    entry_nodes = [node for node in data["nodes"] if node["kind"] == "entry"]
+    assert [node["label"] for node in entry_nodes] == ["Bananas", "Pears", "Untagged"]
+    assert [node for node in data["nodes"] if node["kind"] == "tag"] == []
+    assert data["links"] == []
+
+
+def test_graph_shared_urls_get_distinct_opaque_ids_and_occurrence_specific_links(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    vault = tmp_path / "vault"
+    shared_url = "https://example.com/shared"
+    write_index(
+        vault,
+        entry_block("First", tags="#common #alpha", url=shared_url),
+        entry_block("Second", tags="#common #beta", url=shared_url),
+        entry_block("Third", tags="#alpha #beta", url="https://example.com/third"),
+    )
+    _, _, client = make_dashboard_client(monkeypatch, vault)
+
+    data = client.get("/graph-json").json()
+    entries = {node["label"]: node for node in data["nodes"] if node["kind"] == "entry"}
+    sources_by_target = {
+        entry_id: {link["source"] for link in data["links"] if link["target"] == entry_id}
+        for entry_id in (node["id"] for node in entries.values())
+    }
+
+    assert entries["First"]["id"] != entries["Second"]["id"]
+    assert sources_by_target[entries["First"]["id"]] == {"tag:#common", "tag:#alpha"}
+    assert sources_by_target[entries["Second"]["id"]] == {"tag:#common", "tag:#beta"}
+    assert sources_by_target[entries["Third"]["id"]] == {"tag:#alpha", "tag:#beta"}
+    for node in entries.values():
+        assert re.fullmatch(r"entry:[0-9a-f]{64}:\d+", node["id"])
+        assert shared_url not in node["id"]
+        assert node["id"] != f"entry:{node['url']}"
+
+
+def test_graph_identical_occurrences_have_distinct_deterministic_ids(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    vault = tmp_path / "vault"
+    identical = entry_block("Identical", tags="#shared")
+    write_index(vault, identical, identical)
+    _, _, client = make_dashboard_client(monkeypatch, vault)
+
+    first = client.get("/graph-json").json()
+    second = client.get("/graph-json").json()
+    first_ids = [node["id"] for node in first["nodes"] if node["kind"] == "entry"]
+    second_ids = [node["id"] for node in second["nodes"] if node["kind"] == "entry"]
+
+    assert len(first_ids) == len(set(first_ids)) == 2
+    assert first_ids == second_ids
+    assert {link["target"] for link in first["links"]} == set(first_ids)
+
+
+def test_graph_duplicate_tag_token_does_not_activate_singleton_tag(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    vault = tmp_path / "vault"
+    write_index(vault, entry_block("Repeated token", tags="#bananas #bananas"))
+    _, _, client = make_dashboard_client(monkeypatch, vault)
+
+    data = client.get("/graph-json").json()
+
+    assert len([node for node in data["nodes"] if node["kind"] == "entry"]) == 1
+    assert [node for node in data["nodes"] if node["kind"] == "tag"] == []
+    assert data["links"] == []
+
+
+def test_graph_duplicate_tag_tokens_do_not_create_duplicate_links(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    vault = tmp_path / "vault"
+    write_index(
+        vault,
+        entry_block("First", tags="#shared #shared", url="https://example.com/first"),
+        entry_block("Second", tags="#shared", url="https://example.com/second"),
+    )
+    _, _, client = make_dashboard_client(monkeypatch, vault)
+
+    data = client.get("/graph-json").json()
+    tag_nodes = [node for node in data["nodes"] if node["kind"] == "tag"]
+
+    assert tag_nodes == [{"id": "tag:#shared", "label": "#shared", "kind": "tag", "count": 2}]
+    assert len(data["links"]) == 2
+    assert len({(link["source"], link["target"]) for link in data["links"]}) == 2
+
+
+def test_graph_mixed_entries_have_expected_counts_links_and_metadata(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    vault = tmp_path / "vault"
+    write_index(
+        vault,
+        entry_block(
+            "Connected one",
+            tags="#repeat #one-off",
+            shared_by="Ibby",
+            context="work",
+            url="https://example.com/connected-one",
+        ),
+        entry_block("Connected two", tags="#repeat #another", url="https://example.com/connected-two"),
+        entry_block("Standalone", tags="#unique", url="https://example.com/standalone"),
+        entry_block("Untagged", tags="", url="https://example.com/untagged"),
+    )
+    _, _, client = make_dashboard_client(monkeypatch, vault)
+
+    data = client.get("/graph-json").json()
+    entry_nodes = [node for node in data["nodes"] if node["kind"] == "entry"]
+    tag_nodes = [node for node in data["nodes"] if node["kind"] == "tag"]
+
+    assert len(data["nodes"]) == 5
+    assert len(entry_nodes) == 4
+    assert tag_nodes == [{"id": "tag:#repeat", "label": "#repeat", "kind": "tag", "count": 2}]
+    assert len(data["links"]) == 2
+    assert {link["source"] for link in data["links"]} == {"tag:#repeat"}
+    connected = next(node for node in entry_nodes if node["label"] == "Connected one")
+    assert connected["type"] == "article"
+    assert connected["url"] == "https://example.com/connected-one"
+    assert connected["shared_by"] == "Ibby"
+    assert connected["context"] == "work"
+    assert connected["count"] == 1
+
+
+def test_graph_empty_archive_returns_empty_dataset(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    vault = tmp_path / "vault"
+    write_index(vault)
+    _, _, client = make_dashboard_client(monkeypatch, vault)
+
+    response = client.get("/graph-json")
+
+    assert response.status_code == 200
+    assert response.json() == {"nodes": [], "links": []}
+
+
+def test_graph_templates_guard_standalone_forces_drag_and_double_click_behavior() -> None:
+    paths = [
+        DASHBOARD / "templates" / "graph.html",
+        ROOT / "skill-link-curator-dashboard" / "templates" / "force-graph.html",
+    ]
+
+    for path in paths:
+        template = path.read_text()
+        assert "new Set(data.links.map(d => d.target))" in template
+        assert "d3.forceX(width / 2)" in template
+        assert "d3.forceY(height / 2)" in template
+        assert "d.kind === 'entry' && !linkedEntryIds.has(d.id)" in template
+        assert ".force('standalone-x', standaloneX)" in template
+        assert ".force('standalone-y', standaloneY)" in template
+        assert "window.addEventListener('resize', resizeGraph)" in template
+        assert "centerForce.x(width / 2).y(height / 2)" in template
+        assert "standaloneX.x(width / 2)" in template
+        assert "standaloneY.y(height / 2)" in template
+        assert "node.call(drag)" in template
+        assert "if (d.kind === 'tag') { d.fx = null; d.fy = null; }" in template
+        assert "node.filter(d => d.kind === 'entry').on('dblclick'" in template
+        assert "window.open(d.url, '_blank', 'noopener')" in template
+
+
 @pytest.mark.parametrize("host", ["127.0.0.1", "localhost", "::1"])
 def test_loopback_bind_values_are_accepted(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, host: str

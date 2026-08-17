@@ -1,11 +1,13 @@
 """Archive parser for the lightweight link curator web app."""
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import os
 import re
 import unicodedata
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -316,16 +318,24 @@ def get_graph_data() -> dict:
          "links": [{"source", "target"}]}
     """
     entries = get_all_entries()
+    entry_occurrences: list[tuple[ArchiveEntry, str, list[str]]] = []
+    digest_occurrences: dict[str, int] = {}
     tag_counts: dict[str, int] = {}
+
     for e in entries:
-        for t in e.tags:
+        serialized = json.dumps(asdict(e), sort_keys=True, separators=(",", ":"))
+        digest = hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+        occurrence = digest_occurrences.get(digest, 0) + 1
+        digest_occurrences[digest] = occurrence
+        entry_id = f"entry:{digest}:{occurrence}"
+
+        unique_tags = list(dict.fromkeys(e.tags))
+        entry_occurrences.append((e, entry_id, unique_tags))
+        for t in unique_tags:
             tag_counts[t] = tag_counts.get(t, 0) + 1
 
-    # Keep repeated tags by default to reduce noise. For a fresh/small archive,
-    # fall back to all tags so the graph view is not blank for first-time users.
+    # Only repeated tags provide useful grouping; singleton tags stay hidden.
     active_tags = {t for t, c in tag_counts.items() if c >= 2}
-    if not active_tags:
-        active_tags = set(tag_counts)
 
     nodes: list[dict] = []
     for tag, count in sorted(tag_counts.items(), key=lambda x: -x[1]):
@@ -338,12 +348,9 @@ def get_graph_data() -> dict:
             "count": count,
         })
 
-    for e in entries:
-        # Skip entries with no active-tag overlap — they'd be orphan nodes
-        if not any(t in active_tags for t in e.tags):
-            continue
+    for e, entry_id, _ in entry_occurrences:
         nodes.append({
-            "id": f"entry:{e.url}",
+            "id": entry_id,
             "label": e.title,
             "kind": "entry",
             "type": e.entry_type,
@@ -354,14 +361,12 @@ def get_graph_data() -> dict:
         })
 
     links: list[dict] = []
-    for e in entries:
-        if not any(t in active_tags for t in e.tags):
-            continue
-        for t in e.tags:
+    for _, entry_id, unique_tags in entry_occurrences:
+        for t in unique_tags:
             if t in active_tags:
                 links.append({
                     "source": f"tag:{t}",
-                    "target": f"entry:{e.url}",
+                    "target": entry_id,
                 })
 
     return {"nodes": nodes, "links": links}

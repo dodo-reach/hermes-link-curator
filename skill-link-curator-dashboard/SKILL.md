@@ -188,17 +188,26 @@ is built by `get_graph_data()` in `archive.py` and exposed via `/graph-json`.
 - `nodes`: `{id, label, kind: "tag"|"entry", count, type?, url?, shared_by?, context?}`
 - `links`: `{source: tag_id, target: entry_id}` — bipartite, no entry↔entry edges
 
+Every parsed archive entry has one entry node. Entry IDs are deterministic,
+opaque, and unique within a graph response, including for duplicate URLs and
+identical entry occurrences. Consumers must not derive meaning from entry IDs
+or depend on the previous `entry:<raw-url>` format.
+
 **Why tag-graph instead of entry-graph**: with 100+ entries, an entry↔entry
 similarity graph becomes a hairball. Tag hubs collapse shared topics into a
 readable cluster, the way Obsidian's native graph view does. Entry count is
 `O(entries × avg_tags)`, link count is `O(tag_appearances)`.
 
-**Filtering rule**: tags with `count < 2` are dropped (reduces noise from
-one-off tags) and entries that share zero active tags are omitted as orphans.
-With 103 entries this produces ~78 tag nodes + ~101 entry nodes + ~400 links.
+**Filtering rule**: a tag must occur in at least two distinct entries to receive
+a tag node. Tags used by only one entry are intentionally hidden to reduce
+noise, and duplicate tag tokens within one entry count only once. Entries with
+no repeated tags (including entries with no tags) remain visible as standalone
+nodes.
 
-**Front-end interactions** (D3 v7 via CDN, no npm install):
-- drag to reposition, scroll to zoom (0.3×–5×), background dblclick to reset
+**Front-end interactions** (vendored D3 v7, no npm install):
+- drag any node to reposition it; entry nodes stay where dropped while tag
+  nodes rejoin the simulation after dragging
+- scroll to zoom (0.3×–5×), background dblclick to reset
 - click a tag node → highlight that cluster, dim the rest (click again to clear)
 - dblclick an entry node → open its URL in a new tab
 

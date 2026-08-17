@@ -1,7 +1,7 @@
 # Graph view — D3 force-directed over the vault
 
 The archive dashboard exposes `/graph` (HTML) and `/graph-json` (data). The
-front-end is D3 v7 loaded from CDN — no `npm install`, no build step. This
+front-end uses the vendored D3 v7 bundle — no `npm install`, no build step. This
 document captures the reusable pieces so a future agent can rebuild or extend
 the view without rediscovering the tuning.
 
@@ -13,26 +13,28 @@ the view without rediscovering the tuning.
 {
   "nodes": [
     {"id": "tag:#ai",         "label": "#ai",        "kind": "tag",   "count": 61},
-    {"id": "entry:<url-hash>","label": "Title",      "kind": "entry", "type": "github", "url": "https://..."}
+    {"id": "entry:<digest>:1","label": "Title",      "kind": "entry", "type": "github", "url": "https://..."}
   ],
   "links": [
-    {"source": "tag:#ai", "target": "entry:<url-hash>"}
+    {"source": "tag:#ai", "target": "entry:<digest>:1"}
   ]
 }
 ```
 
 Two node kinds, bipartite. `id` is namespaced with `tag:` / `entry:` to avoid
-collisions if a tag literally collides with a URL.
+collisions. Every parsed archive occurrence receives one entry node. Entry IDs
+are deterministic SHA-256-based opaque values with occurrence suffixes, unique
+within each response even when URLs or entire entries are duplicated. Consumers
+must not interpret these IDs or rely on the former `entry:<raw-url>` format.
 
 ## Filtering
 
-- **Tag nodes with `count < 2` are dropped** — one-off tags produce isolated
-  edge-bridges that add noise without grouping power.
-- **Entries with no surviving tag are dropped** — they'd be orphan nodes with
-  no edges, just visual clutter.
-
-With 103 entries / ~150 tags this typically yields ~78 tag nodes + ~101 entry
-nodes + ~400 links. Readable, no hairball.
+- **A tag must occur in at least two distinct entries** to receive a tag node.
+  Repeated tokens within one entry count once.
+- **Tags used by only one entry are intentionally hidden** because they add
+  noise without grouping power.
+- **Every entry remains visible.** Entries with no repeated tags, including
+  untagged entries, appear as standalone nodes without links.
 
 ## Why tag-graph (not entry-similarity)
 
@@ -62,6 +64,10 @@ d3.forceSimulation(nodes)
     d3.forceManyBody()
       .strength(d => d.kind === 'tag' ? -180 : -30))
   .force('center', d3.forceCenter(w/2, h/2))
+  .force('standalone-x', d3.forceX(w/2)
+    .strength(d => isDisconnectedEntry(d) ? 0.04 : 0))
+  .force('standalone-y', d3.forceY(h/2)
+    .strength(d => isDisconnectedEntry(d) ? 0.04 : 0))
   .force('collision',
     d3.forceCollide()
       .radius(d => d.kind === 'tag' ? 32 : 8))
@@ -70,6 +76,13 @@ d3.forceSimulation(nodes)
 **Why hub-vs-leaf asymmetry**: tag nodes have larger charge and longer link
 distance so the cluster spreads out, while entry nodes stay close to their
 hubs. Without the asymmetry tag nodes pull each other into a tight ball.
+
+Capture linked entry IDs before passing links to `forceLink`, because D3 mutates
+the `source` and `target` values into node objects. The weak X/Y forces apply
+only to disconnected entries; connected clusters keep zero strength. Resize
+handling must update all three center coordinates. Entries pinned by a user
+retain their fixed coordinates after a resize and are not automatically
+recentered.
 
 ## Color map (entry types)
 
@@ -92,7 +105,7 @@ so they read as "neutral hubs" and entries read as the colored payload.
 
 | Action | Result |
 |--------|--------|
-| Drag node | Repositions (tag nodes unfix on release, entry nodes stay put — entries are "leaves", no reason to pin them) |
+| Drag node | All nodes move; entry nodes stay pinned where dropped, while tag nodes rejoin the simulation on release. |
 | Scroll | Zoom 0.3×–5× (`d3.zoom().scaleExtent`) |
 | Click tag node | Highlight connected cluster, dim rest to opacity 0.15. Click again to clear. |
 | Dblclick entry | `window.open(url, '_blank')` |
