@@ -105,6 +105,7 @@ required_files=(
     "$REPO_DIR/skill-obsidian/SKILL.md"
     "$REPO_DIR/skill-obsidian/scripts/save_entry.py"
     "$REPO_DIR/skill-obsidian/scripts/rebuild_index.py"
+    "$REPO_DIR/skill-obsidian/scripts/vault_ops.py"
     "$REPO_DIR/skill-link-curator-dashboard/SKILL.md"
     "$REPO_DIR/dashboard/main.py"
     "$REPO_DIR/dashboard/archive.py"
@@ -350,17 +351,11 @@ if b'HOST="127.0.0.1"' not in start_path.read_bytes():
     raise SystemExit("installed dashboard launcher is not pinned to 127.0.0.1")
 PY
 
-# Choose a Python interpreter without installing or replacing Hermes itself.
-HERMES_VENV="$HOME/.hermes/hermes-agent/venv/bin/python"
-if [[ -x "$HERMES_VENV" ]] && "$HERMES_VENV" -c "import fastapi, uvicorn, jinja2, pydantic" 2>/dev/null; then
-    PY="$HERMES_VENV"
-    echo "→ Reusing the existing Hermes Python environment"
-else
-    echo "→ Creating an isolated dashboard Python environment..."
-    python3 -m venv "$PROFILE_DIR/dashboard/venv"
-    "$PROFILE_DIR/dashboard/venv/bin/pip" install -q -r "$PROFILE_DIR/dashboard/requirements.txt"
-    PY="$PROFILE_DIR/dashboard/venv/bin/python"
-fi
+# Keep dashboard dependencies isolated from Hermes itself.
+echo "→ Creating an isolated dashboard Python environment..."
+python3 -m venv "$PROFILE_DIR/dashboard/venv"
+"$PROFILE_DIR/dashboard/venv/bin/pip" install -q -r "$PROFILE_DIR/dashboard/requirements.txt"
+PY="$PROFILE_DIR/dashboard/venv/bin/python"
 
 # Patch only the installed launcher and shell-quote the interpreter path.
 START_SH="$PROFILE_DIR/dashboard/start.sh"

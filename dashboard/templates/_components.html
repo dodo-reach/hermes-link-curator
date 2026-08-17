@@ -11,7 +11,7 @@
     {% endif %}
   </div>
   <p class="entry-title">
-    {% if entry.url %}<a href="{{ entry.url }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">{{ entry.title }}</a>{% else %}{{ entry.title }}{% endif %}
+    {% if entry.clickable_url %}<a href="{{ entry.clickable_url }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">{{ entry.title }}</a>{% else %}{{ entry.title }}{% endif %}
   </p>
   {% if entry.summary %}
   <p class="entry-summary entry-collapsed-summary">{{ entry.summary|collapsed_summary }}</p>

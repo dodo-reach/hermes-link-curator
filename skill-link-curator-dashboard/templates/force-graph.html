@@ -17,9 +17,17 @@
 {% endblock %}
 
 {% block calendar_script %}
-<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="/static/vendor/d3.v7.min.js"></script>
 <script>
 (async function() {
+  function isSafeHttpUrl(value) {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (error) {
+      return false;
+    }
+  }
   // 1. Fetch data from your endpoint
   const res = await fetch('/graph-json');
   const data = await res.json();  // {nodes, links}
@@ -148,7 +156,7 @@
 
   // 10. Dblclick leaf = open URL
   node.filter(d => d.kind === 'entry').on('dblclick', (e, d) => {
-    if (d.url) window.open(d.url, '_blank');
+    if (isSafeHttpUrl(d.url)) window.open(d.url, '_blank', 'noopener');
   });
 
   // 11. PITFALL: null out D3's default dblclick-to-zoom BEFORE binding our own

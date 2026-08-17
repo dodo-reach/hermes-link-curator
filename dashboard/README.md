@@ -23,8 +23,16 @@ Override with `$HERMES_ARCHIVE_VAULT` if the vault lives somewhere else.
 
 ```bash
 ./start.sh 8090
-# → open http://localhost:8090
+# → open http://127.0.0.1:8090
 ```
+
+The dashboard defaults to loopback and has no authentication. A non-loopback
+`ARCHIVE_HOST` is rejected unless `ARCHIVE_ALLOW_REMOTE_BIND=1` is also set.
+Keep it on loopback and use an SSH tunnel or an existing authenticated proxy for
+remote access rather than exposing it directly.
+
+All application scripts, styles, and fonts are local; D3 7.9.0 is vendored under
+`static/vendor/`.
 
 ## Validate the vault
 

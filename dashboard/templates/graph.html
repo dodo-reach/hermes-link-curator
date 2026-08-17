@@ -17,9 +17,17 @@
 {% endblock %}
 
 {% block calendar_script %}
-<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="/static/vendor/d3.v7.min.js"></script>
 <script>
 (async function() {
+  function isSafeHttpUrl(value) {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (error) {
+      return false;
+    }
+  }
   const res = await fetch('/graph-json');
   const data = await res.json();
   const container = document.getElementById('graph-container');
@@ -139,7 +147,7 @@
 
   // Click entry = open URL
   node.filter(d => d.kind === 'entry').on('dblclick', (e, d) => {
-    if (d.url) window.open(d.url, '_blank');
+    if (isSafeHttpUrl(d.url)) window.open(d.url, '_blank', 'noopener');
   });
 
   // Double-click background = reset zoom

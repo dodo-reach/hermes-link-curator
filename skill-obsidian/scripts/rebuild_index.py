@@ -1,52 +1,57 @@
 #!/usr/bin/env python3
-"""
-Rebuild INDEX.md from all daily note files.
-Use when INDEX.md was overwritten and entries are missing.
+"""Explicitly rebuild INDEX.md from canonical dated notes, with a backup."""
+from __future__ import annotations
 
-Auto-discovers the vault path. Optionally override with $HERMES_ARCHIVE_VAULT.
-"""
-import re
+import os
+import sys
 from pathlib import Path
+
+from vault_ops import (
+    JOURNAL_NAME,
+    VaultError,
+    atomic_replace_text,
+    build_index_from_dated_notes_locked,
+    create_index_backup_locked,
+    ensure_vault_directory,
+    vault_lock,
+)
+
 
 # Auto-discover vault path:
 # This script lives at <profile>/skills/note-taking/obsidian/scripts/rebuild_index.py
 # Vault lives at <profile>/vault
 # Override with $HERMES_ARCHIVE_VAULT env var if needed.
-import os
 VAULT = Path(os.environ.get(
     "HERMES_ARCHIVE_VAULT",
     Path(__file__).resolve().parent.parent.parent.parent.parent / "vault"
 ))
 INDEX = VAULT / "INDEX.md"
 
-days = sorted(
-    [p for p in VAULT.glob("*.md") if re.fullmatch(r"\d{4}-\d{2}-\d{2}\.md", p.name)],
-    reverse=True,
-)
-print(f"Found {len(days)} daily files")
 
-all_entries = []
-for day in days:
-    content = day.read_text().replace('\r\n', '\n').replace('\r', '\n')
-    segments = re.split(r'(?=\n### )', content)
-    for seg in segments:
-        seg = seg.strip()
-        if not seg or not seg.startswith('### ') or '**URL**' not in seg:
-            continue
-        while seg.endswith('\n---'):
-            seg = seg[:-4]
-        all_entries.append(seg.rstrip('\n'))
+def main() -> int:
+    try:
+        ensure_vault_directory(VAULT)
+        with vault_lock(VAULT):
+            journal = VAULT / JOURNAL_NAME
+            if journal.exists():
+                raise VaultError(
+                    f"pending transaction exists at {journal}; reconcile it with save_entry.py "
+                    "or inspect it before rebuilding"
+                )
 
-def get_date(entry):
-    m = re.search(r'\*\*Added\*\*:\s*(\d{4}-\d{2}-\d{2})', entry)
-    return m.group(1) if m else "0000-00-00"
+            existing = INDEX.read_text(encoding="utf-8") if INDEX.exists() else None
+            rebuilt, count = build_index_from_dated_notes_locked(VAULT, existing)
+            backup = create_index_backup_locked(VAULT, existing) if existing is not None else None
+            atomic_replace_text(INDEX, rebuilt)
+    except (OSError, VaultError) as exc:
+        print(f"ERROR: INDEX.md rebuild failed: {exc}", file=sys.stderr)
+        return 1
 
-all_entries.sort(key=get_date, reverse=True)
+    if backup is not None:
+        print(f"Backed up previous INDEX.md to {backup.name}")
+    print(f"INDEX.md rebuilt from dated notes: {count} entries")
+    return 0
 
-lines = ["# Index"]
-for e in all_entries:
-    lines.append(e)
-    lines.append("---")
 
-INDEX.write_text("\n".join(lines).rstrip() + "\n")
-print(f"INDEX.md rebuilt: {len(all_entries)} entries")
+if __name__ == "__main__":
+    raise SystemExit(main())

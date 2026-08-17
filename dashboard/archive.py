@@ -4,14 +4,30 @@ from __future__ import annotations
 import logging
 import os
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlsplit
 
 # Configure logging
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
+
+
+def is_safe_http_url(value: str) -> bool:
+    """Return whether a raw vault URL is safe to expose as a clickable link."""
+    if not value or any(character.isspace() for character in value):
+        return False
+    if any(unicodedata.category(character).startswith("C") for character in value):
+        return False
+    try:
+        parsed = urlsplit(value)
+        _ = parsed.port
+    except ValueError:
+        return False
+    return parsed.scheme.lower() in {"http", "https"} and bool(parsed.hostname)
 
 # Auto-discover vault path:
 # This file lives at <profile>/dashboard/archive.py
@@ -36,6 +52,10 @@ class ArchiveEntry:
     status: Optional[str] = None
     note: Optional[str] = None
     source: Optional[str] = None
+
+    @property
+    def clickable_url(self) -> Optional[str]:
+        return self.url if is_safe_http_url(self.url) else None
 
 
 @dataclass
@@ -72,16 +92,29 @@ def _parse_entry(block: str, file: str = "INDEX.md") -> Optional[ArchiveEntry]:
     if not title_m:
         title_m = re.search(r'^###\s+(.+?)\s*$', block, re.MULTILINE)
 
-    url_m = re.search(r'\*\*URL\*\*:\s*([^\s]+)', block)
-    type_m = re.search(r'\*\*Type\*\*:\s*`([^`]+)`', block)
-    tags_m = re.findall(r'#\w[-\w]*', block)
-    added_m = re.search(r'\*\*Added\*\*:\s*(\d{4}-\d{2}-\d{2})', block)
-    summary_m = re.search(r'\*\*Summary\*\*:\s*(.+?)(?=\n---|\n\*\*Note|\Z)', block, re.DOTALL)
+    url_m = re.search(r'^- \*\*URL\*\*:\s*([^\s]+)\s*$', block, re.MULTILINE)
+    type_m = re.search(r'^- \*\*Type\*\*: `([^`]+)`$', block, re.MULTILINE)
+    tags_line_m = re.search(r'^- \*\*Tags\*\*:\s*(.*)$', block, re.MULTILINE)
+    tags_m = re.findall(r'#[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*', tags_line_m.group(1)) if tags_line_m else []
+    added_m = re.search(r'^- \*\*Added\*\*: (\d{4}-\d{2}-\d{2})$', block, re.MULTILINE)
+    summary_m = re.search(
+        r'^- \*\*Summary\*\*:\s*(.*?)(?=^- \*\*(?:Note|Source|Status)\*\*:|\Z)',
+        block,
+        re.DOTALL | re.MULTILINE,
+    )
     shared_by_m = re.search(r'^- \*\*Shared by\*\*:\s*([^\r\n]+?)\s*$', block, re.MULTILINE)
     context_m = re.search(r'^- \*\*Context\*\*: `(work|personal)`$', block, re.MULTILINE)
-    status_m = re.search(r'\*\*Status\*\*:\s*`([^`]+)`', block)
-    note_m = re.search(r'\*\*Note\*\*:\s*(.+?)(?=\n---|\Z)', block, re.DOTALL)
-    source_m = re.search(r'\*\*Source\*\*:\s*(.+?)(?=\n---|\Z)', block, re.DOTALL)
+    status_m = re.search(r'^- \*\*Status\*\*: `([^`]+)`$', block, re.MULTILINE)
+    note_m = re.search(
+        r'^- \*\*Note\*\*:\s*(.*?)(?=^- \*\*(?:Source|Status)\*\*:|\Z)',
+        block,
+        re.DOTALL | re.MULTILINE,
+    )
+    source_m = re.search(
+        r'^- \*\*Source\*\*:\s*(.*?)(?=^- \*\*Status\*\*:|\Z)',
+        block,
+        re.DOTALL | re.MULTILINE,
+    )
 
     if not (title_m and added_m):
         return None

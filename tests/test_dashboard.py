@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib
+import hashlib
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -89,6 +91,26 @@ def test_parser_trims_shared_by_and_fields_are_position_independent(
     assert parsed is not None
     assert parsed.shared_by == "Ibby"
     assert parsed.context == "work"
+
+
+def test_parser_keeps_summary_note_source_and_status_separate(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    archive, validate, _ = load_modules(monkeypatch, tmp_path / "vault")
+    block = entry_block(summary="Full summary with\na second line.") + (
+        "\n- **Note**: A preserved note."
+        "\n- **Source**: User supplied source."
+        "\n- **Status**: `reviewed`"
+    )
+
+    parsed = archive._parse_entry(block)
+
+    assert parsed is not None
+    assert parsed.summary == "Full summary with\na second line."
+    assert parsed.note == "A preserved note."
+    assert parsed.source == "User supplied source."
+    assert parsed.status == "reviewed"
+    assert validate.validate_entry(block).valid
 
 
 def test_search_includes_shared_by_and_context(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -442,6 +464,78 @@ def test_malicious_card_values_are_escaped(monkeypatch: pytest.MonkeyPatch, tmp_
     assert "&lt;script&gt;alert" in html
     assert "&lt;img src=x onerror=&#34;alert(1)&#34;&gt;" in html
     assert "&lt;svg onload=&#34;alert(4)&#34;&gt;" in html
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["javascript:alert(1)", "data:text/html,hello", "file:///tmp/private", "not-a-url"],
+)
+def test_unsafe_manual_url_is_invalid_and_not_clickable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, url: str
+) -> None:
+    vault = tmp_path / "vault"
+    block = entry_block(url=url)
+    write_index(vault, block)
+    archive, validate, main = load_modules(monkeypatch, vault)
+
+    result = validate.validate_entry(block)
+    parsed = archive._parse_entry(block)
+
+    assert not result.valid
+    assert any("Unsafe **URL**" in error for error in result.errors)
+    assert parsed is not None
+    assert parsed.url == url
+    assert parsed.clickable_url is None
+    html = str(main.templates.env.get_template("_components.html").module.entry_card(parsed))
+    assert f'href="{url}"' not in html
+
+
+def test_external_dashboard_dependencies_are_forbidden_and_d3_is_local() -> None:
+    templates = list((DASHBOARD / "templates").glob("*.html"))
+    templates.extend((ROOT / "skill-link-curator-dashboard" / "templates").glob("*.html"))
+    external_resource = re.compile(
+        r'<(?:script|link)\b[^>]*(?:src|href)=["\']https?://', re.IGNORECASE
+    )
+    for path in templates:
+        assert not external_resource.search(path.read_text()), path
+
+    css = "\n".join(path.read_text() for path in (DASHBOARD / "static").glob("*.css"))
+    assert not re.search(r"@import\s+url\([^)]*https?://|url\([^)]*https?://", css, re.I)
+    assert '/static/vendor/d3.v7.min.js' in (DASHBOARD / "templates" / "graph.html").read_text()
+    assert 'https://d3js.org' not in (DASHBOARD / "templates" / "graph.html").read_text()
+
+
+def test_vendored_d3_version_and_checksum() -> None:
+    bundle = DASHBOARD / "static" / "vendor" / "d3.v7.min.js"
+    content = bundle.read_bytes()
+    assert content.startswith(b"// https://d3js.org v7.9.0")
+    assert hashlib.sha256(content).hexdigest() == "f2094bbf6141b359722c4fe454eb6c4b0f0e42cc10cc7af921fc158fceb86539"
+    assert (bundle.parent / "LICENSE.d3.txt").is_file()
+
+
+@pytest.mark.parametrize("host", ["127.0.0.1", "localhost", "::1"])
+def test_loopback_bind_values_are_accepted(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, host: str
+) -> None:
+    _, _, main = load_modules(monkeypatch, tmp_path / "vault")
+    assert main.validate_bind_host(host) == host
+
+
+@pytest.mark.parametrize("host", ["0.0.0.0", "192.168.1.10", "example.com"])
+def test_remote_bind_requires_explicit_opt_in(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, host: str
+) -> None:
+    _, _, main = load_modules(monkeypatch, tmp_path / "vault")
+    with pytest.raises(RuntimeError, match="ARCHIVE_ALLOW_REMOTE_BIND=1"):
+        main.validate_bind_host(host)
+    assert main.validate_bind_host(host, "1") == host
+
+
+def test_default_bind_is_loopback(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.delenv("ARCHIVE_HOST", raising=False)
+    monkeypatch.delenv("ARCHIVE_ALLOW_REMOTE_BIND", raising=False)
+    _, _, main = load_modules(monkeypatch, tmp_path / "vault")
+    assert main.HOST == "127.0.0.1"
 
 
 def test_all_card_views_and_existing_json_endpoints(

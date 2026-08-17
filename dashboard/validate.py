@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 @dataclass
@@ -15,6 +17,19 @@ class ValidationResult:
     @property
     def is_valid(self) -> bool:
         return self.valid
+
+
+def is_safe_http_url(value: str) -> bool:
+    if not value or any(character.isspace() for character in value):
+        return False
+    if any(unicodedata.category(character).startswith("C") for character in value):
+        return False
+    try:
+        parsed = urlsplit(value)
+        _ = parsed.port
+    except ValueError:
+        return False
+    return parsed.scheme.lower() in {"http", "https"} and bool(parsed.hostname)
 
 
 def validate_entry(block: str) -> ValidationResult:
@@ -59,15 +74,22 @@ def validate_entry(block: str) -> ValidationResult:
         errors.append("Malformed **Shared by** field (expected one non-empty plain-text line)")
 
     # 1. Title line
-    if not re.search(r'^###\s+\S', block, re.MULTILINE):
+    title_lines = [line for line in block_lines if line.startswith("### ")]
+    if len(title_lines) != 1 or not re.fullmatch(r'###\s+\S.*', title_lines[0]):
         errors.append("Missing or malformed ### title line")
 
-    # 2. URL
-    if not re.search(r'\*\*URL\*\*:\s*\S+', block):
+    # 2. URL: require one canonical field and reject unsafe manual edits.
+    url_marker_re = re.compile(r'^[ \t]*-[ \t]+\*{0,3}URL\*{0,3}(?:[ \t]*:|[ \t]+|[ \t]*$)')
+    url_canonical_re = re.compile(r'^- \*\*URL\*\*: (\S+)$')
+    url_lines = [line for line in block_lines if url_marker_re.match(line)]
+    url_match = url_canonical_re.fullmatch(url_lines[0]) if len(url_lines) == 1 else None
+    if not url_match:
         errors.append("Missing **URL** field or empty URL")
+    elif not is_safe_http_url(url_match.group(1)):
+        errors.append("Unsafe **URL** field (expected a valid http:// or https:// URL)")
 
     # 3. Added date
-    added_m = re.search(r'\*\*Added\*\*:\s*(\d{4}-\d{2}-\d{2})', block)
+    added_m = re.search(r'^- \*\*Added\*\*: (\d{4}-\d{2}-\d{2})$', block, re.MULTILINE)
     if not added_m:
         errors.append("Missing **Added**: YYYY-MM-DD")
     else:
@@ -79,16 +101,24 @@ def validate_entry(block: str) -> ValidationResult:
             errors.append(f"Invalid date format: {date_str} (expected YYYY-MM-DD)")
 
     # 4. Type
-    if not re.search(r'\*\*Type\*\*:\s*`[^`]+`', block):
+    type_m = re.search(
+        r'^- \*\*Type\*\*: `(github|x-post|article|tool|video|paper|other)`$',
+        block,
+        re.MULTILINE,
+    )
+    if not type_m:
         warnings.append("Missing **Type** field (defaults to 'other')")
 
     # 5. Tags
-    tags = re.findall(r'#\w[-\w]*', block)
+    tags_m = re.search(r'^- \*\*Tags\*\*:\s*(.*)$', block, re.MULTILINE)
+    tags = tags_m.group(1).split() if tags_m else []
     if not tags:
         warnings.append("No tags found (should have at least 1)")
+    elif any(not re.fullmatch(r'#[a-z0-9]+(?:-[a-z0-9]+)*', tag) for tag in tags):
+        errors.append("Malformed **Tags** field (use lowercase topic tags with internal hyphens)")
 
     # 6. Summary
-    if not re.search(r'\*\*Summary\*\*:', block):
+    if not re.search(r'^- \*\*Summary\*\*:', block, re.MULTILINE):
         warnings.append("Missing **Summary** field")
 
     # 7. Trailing separator check
@@ -97,7 +127,6 @@ def validate_entry(block: str) -> ValidationResult:
         warnings.append("Entry has trailing --- separator (should not end with ---)")
 
     # 8. Check for em-dash vs hyphen-minus in title line
-    title_lines = [l for l in lines if l.startswith('### ')]
     for tl in title_lines:
         if '—' in tl:
             warnings.append(f"Title uses em-dash (U+2014) instead of hyphen-minus (-): '{tl[:60]}...'")

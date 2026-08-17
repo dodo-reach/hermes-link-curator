@@ -222,16 +222,19 @@ For any new page that needs the same nav + footer as the rest of the dashboard:
 1. **Dashboard shows fewer entries than expected** — run validate.py; if health count matches vault count, the server is fine — the issue is browser-side
 2. **Old process still running on 8090** — new start fails because port is occupied. Always kill first.
 3. **Browser cache** — after any fix, always try `Ctrl+Shift+R` or incognito. The dashboard is read-heavy and browsers aggressively cache it.
-4. **INDEX.md entries missing (root cause: write_file overwrite)** — the link-curator agent may have used `write_file` directly on INDEX.md without reading it first, wiping all previous entries. If only June entries show, May is gone. Fix: rebuild from daily notes using `scripts/rebuild_index.py` (see below). Prevention: use `save_entry.py` from the `obsidian` skill for all new saves — it does atomic read+patch, never full overwrite.
+4. **INDEX.md entries missing** — use the explicit `rebuild_index.py` tool below. It locks the vault and creates a timestamped backup before replacing an existing index. Prevention: use `save_entry.py` for all new saves; it journals the two-file update and atomically replaces each file.
 
 ## Rebuild INDEX.md from daily notes
 
-If INDEX.md was overwritten and entries are missing, rebuild from the daily notes:
+If INDEX.md is damaged or missing, explicitly rebuild it from canonical dated notes:
 
 ```bash
 cd <profile-dir>/skills/note-taking/obsidian/scripts
 python3 rebuild_index.py
 ```
+
+The tool refuses to run while an unresolved save journal exists and backs up an
+existing index before replacement.
 
 Then validate:
 ```bash
@@ -242,7 +245,6 @@ curl http://localhost:8090/reload-cache
 ## Related skills
 
 - `obsidian` — vault entry format, save workflow, validate.py
-- `camofox` — for browser-session fetching on sites that block simple extraction
 
 ## References
 

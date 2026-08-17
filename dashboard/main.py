@@ -35,6 +35,22 @@ VAULT_PATH = os.environ.get(
 PORT = int(os.environ.get("ARCHIVE_PORT", "8090"))
 HOST = os.environ.get("ARCHIVE_HOST", "127.0.0.1")
 
+
+def validate_bind_host(host: str, allow_remote: str | None = None) -> str:
+    """Reject accidental network exposure unless it is explicitly enabled."""
+    normalized = host.strip().casefold()
+    if normalized in {"127.0.0.1", "localhost", "::1"}:
+        return host.strip()
+    if allow_remote == "1":
+        return host.strip()
+    raise RuntimeError(
+        f"refusing non-loopback ARCHIVE_HOST={host!r}; set ARCHIVE_ALLOW_REMOTE_BIND=1 "
+        "only if you intentionally accept unauthenticated remote access"
+    )
+
+
+HOST = validate_bind_host(HOST, os.environ.get("ARCHIVE_ALLOW_REMOTE_BIND"))
+
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 templates.env.filters["collapsed_summary"] = collapsed_summary
 templates.env.filters["sender_initial"] = sender_initial

@@ -33,6 +33,15 @@
   let currentYear, currentMonth;
   const today = new Date();
 
+  function isSafeHttpUrl(value) {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (error) {
+      return false;
+    }
+  }
+
   function init(y, m) {
     currentYear = y;
     currentMonth = m;
@@ -172,7 +181,7 @@
 
     var title = document.createElement('p');
     title.className = 'entry-title';
-    if (entry.url) {
+    if (isSafeHttpUrl(entry.url)) {
       var a = document.createElement('a');
       a.href = entry.url;
       a.target = '_blank';

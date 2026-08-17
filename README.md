@@ -1,147 +1,137 @@
 # Hermes Link Curator
 
-A **link curator profile pack** for [Hermes Agent](https://github.com/NousResearch/hermes-agent) — turn any Hermes agent into a librarian. Send a URL, get it archived, tagged, summarized, and browsable in a fast Obsidian-style dashboard.
+A secure, profile-isolated link curator for Hermes Agent. Send a URL and the
+curator stores a validated Markdown entry in a local vault that can be browsed
+through a responsive FastAPI dashboard.
 
 ## Dashboard preview
 
-[![Hermes Link Curator dashboard running on iPhone](assets/dashboard-preview.gif)](assets/dashboard-preview.mp4)
+[![Link Curator dashboard showing responsive cards, metadata, and filters](assets/dashboard-preview.gif)](assets/dashboard-preview.mp4)
 
-The archive is just a local web app, so it works well on desktop and mobile: list view, calendar, search, tags, day pages, graph view, and JSON stats all read from the same markdown vault.
+The dashboard includes list, calendar, day, search, tag, and graph views. Cards
+support optional `Shared by` and `Context` metadata, combinable filters, compact
+mobile layouts, and collapsed summaries without changing the full Markdown or
+JSON data.
 
-## What this is
+## Requirements
 
-- **2 skills** (`obsidian` + `link-curator-dashboard`) — drop into any Hermes profile
-- **1 dashboard** — standalone FastAPI app, Obsidian-style web UI (port 8090)
-- **1 SOUL template** — gives the agent a "librarian" personality (archive, don't summarize)
+- An existing Hermes installation
+- Python 3.10 or newer
+- Bash on macOS, Linux, or WSL
 
-The agent receives links on Telegram, Discord, or anywhere else → fetches content → writes entries to a local markdown vault → the dashboard reads the vault and serves a search/tag/graph view.
+Native Windows installation is not currently supported.
 
-## Requirements and platforms
-
-Hermes Link Curator is designed for Unix-like environments:
-
-- **macOS** — supported
-- **Linux** — supported
-- **Windows via WSL** — should work if Hermes works in your WSL environment
-- **Windows native** — not currently supported by the installer
-
-You need [Hermes Agent](https://github.com/NousResearch/hermes-agent), Python 3.10+, and a Bash-compatible shell. The dashboard itself is a standard FastAPI app, but the installer and profile paths assume `~/.hermes/...`.
-
-## Install (30 seconds, agent-guided)
-
-Send your Hermes agent a message like:
-
-> *Install https://github.com/dodo-reach/hermes-link-curator — follow the AGENT_GUIDE.md.*
-
-The agent will read `AGENT_GUIDE.md`, create a new profile, copy the pieces, and start the dashboard. You can then start archiving:
-
-> *archive https://github.com/some/repo*
-
-or use the dashboard at `http://localhost:8090`.
-
-**Prefer the manual path?** Run `./install.sh` from this repo — it asks one question (profile name) and does the same thing.
-
-## Where the dashboard lives
-
-The installer copies the web app into your Hermes profile and starts it from:
+## Installation
 
 ```bash
-~/.hermes/profiles/<profile-name>/dashboard/
+git clone https://github.com/dodo-reach/hermes-link-curator.git
+cd hermes-link-curator
+bash install.sh
+link-curator setup
+hermes -p link-curator
 ```
 
-By default it listens on:
+`link-curator` is the default profile name. If you select a different safe name
+in the installer, use that name for the final commands:
+
+```bash
+<profile-name> setup
+hermes -p <profile-name>
+```
+
+`install.sh` creates a fresh isolated profile. It does not clone or inherit
+credentials, memories, configuration, tools, skills, sessions, or other content
+from another Hermes profile. It installs only this repository's curator skills,
+dashboard, rendered SOUL, and new empty vault. Model and API credentials are
+configured afterward with `<profile-name> setup`.
+
+The dashboard receives its own virtual environment inside the selected profile;
+it does not modify or reuse Hermes's Python environment.
+
+## Dashboard security and access
+
+The dashboard binds to `127.0.0.1` by default and has no authentication. Do not
+expose it directly to the public internet or recommend binding it to all network
+interfaces.
+
+Open the default installation locally at:
 
 ```text
-http://localhost:8090
+http://127.0.0.1:8090
 ```
 
-That means it is exposed only on the machine running Hermes. The dashboard reads the vault at `~/.hermes/profiles/<profile-name>/vault/`, so every archived link appears there as markdown and in the web UI.
+For remote access, keep the dashboard on loopback and use either:
 
-You can change the port when installing, or later by running:
+- an SSH tunnel, for example
+  `ssh -N -L 8090:127.0.0.1:8090 user@hermes-host`, then open
+  `http://127.0.0.1:8090` locally; or
+- an existing Tailscale Serve proxy configured to forward to
+  `http://127.0.0.1:8090` and protected by the tailnet.
 
-```bash
-cd ~/.hermes/profiles/<profile-name>/dashboard
-./start.sh 8091
+The standalone source dashboard rejects a non-loopback `ARCHIVE_HOST` unless the
+operator also sets `ARCHIVE_ALLOW_REMOTE_BIND=1`. That escape hatch is for
+informed standalone operation; tunnels and authenticated proxies remain the
+recommended approach. Installed profiles are pinned more strictly to loopback.
+
+## Vault and entry format
+
+The default vault is:
+
+```text
+~/.hermes/profiles/link-curator/vault/
 ```
 
-The dashboard binds to `127.0.0.1` by default. To make it reachable from your iPhone on the same private network, start it with:
+For another selected name, replace `link-curator` with that profile name. Dated
+notes are the canonical archive. `INDEX.md` provides the dashboard's newest-first
+view and can be rebuilt manually from dated notes.
 
-```bash
-cd ~/.hermes/profiles/<profile-name>/dashboard
-ARCHIVE_HOST=0.0.0.0 ./start.sh 8090
-```
+Each entry includes a URL, title, type, topic tags, date, and summary. `Shared by`
+and `Context` (`work` or `personal`) remain optional. Explicit safe CLI tags are
+not limited to the curator's automatic three-topic recommendation.
 
-Then open `http://<your-mac-ip>:8090` from Safari on iPhone.
+The save tool validates all fields before filesystem changes, serializes writers
+with a vault lock, replaces each Markdown file atomically, rejects duplicate
+URLs, and uses a hidden journal to reconcile an interrupted two-file save. A
+dated note and `INDEX.md` cannot be replaced as one filesystem transaction; the
+journal makes that two-step operation recoverable without silently rebuilding or
+discarding unrelated index content.
 
-## Use it like an iPhone app
+## Repository layout
 
-Once the dashboard is reachable from your iPhone:
-
-1. Open the dashboard URL in Safari.
-2. Tap the Share button.
-3. Tap **Add to Home Screen**.
-4. Name it `Archive` or `Hermes Links`.
-
-From then on, you can launch the archive from your Home Screen like a small private app.
-
-## Access from anywhere with Tailscale
-
-For access outside your home network, use [Tailscale](https://tailscale.com/) instead of exposing the dashboard to the public internet:
-
-1. Install Tailscale on the hardware running Hermes and on your iPhone.
-2. Sign both devices into the same tailnet.
-3. Start the dashboard with `ARCHIVE_HOST=0.0.0.0`.
-4. On iPhone, open `http://<mac-tailscale-name>:8090` or `http://<mac-tailscale-ip>:8090`.
-5. Add that page to the Home Screen from Safari.
-
-The dashboard does not include authentication, so keep it behind localhost, your LAN, or Tailscale. Do not publish it directly to the open internet.
-
-## Repo layout
-
-```
+```text
 hermes-link-curator/
-├── README.md                          # you are here
-├── AGENT_GUIDE.md                     # instructions for the agent
-├── install.sh                         # self-service installer
-├── SOUL.template.md                   # paste into your profile's SOUL.md
-├── skill-obsidian/                    # the save-link skill
-├── skill-link-curator-dashboard/      # the dashboard maintenance skill
-└── dashboard/                         # standalone FastAPI web app
+├── install.sh
+├── SOUL.template.md
+├── skill-obsidian/
+├── skill-link-curator-dashboard/
+├── dashboard/
+├── docs/operations.md
+└── tests/
 ```
 
-## Architecture
+The dashboard is self-contained when opened: D3 is vendored and the styles use
+system fonts, so it does not fetch scripts, stylesheets, or fonts from external
+services.
 
-Everything lives under `~/.hermes/profiles/<profile-name>/`. Path auto-discovery — no env vars to set, no config files to edit:
+## Operations, restart, and backup
 
+See [docs/operations.md](docs/operations.md) for restart-after-reboot options,
+vault-only backups, explicit index rebuilding, restore, and validation.
+
+## Development
+
+Create a development environment outside Hermes and run:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+bash -n install.sh
+.venv/bin/python -m pytest -q
 ```
-~/.hermes/profiles/link-curator/
-├── SOUL.md                            # personality + triggers
-├── vault/                             # the archive (auto-created on first save)
-│   ├── INDEX.md                       # master list, newest first
-│   └── YYYY-MM-DD.md                  # daily notes
-├── skills/note-taking/
-│   ├── obsidian/                      # the save workflow
-│   └── link-curator-dashboard/        # dashboard maintenance
-└── dashboard/                         # the FastAPI web app
-    ├── main.py
-    ├── archive.py                     # vault parser
-    ├── validate.py                    # integrity checker
-    └── start.sh                       # launcher
-```
 
-The dashboard reads the vault and exposes: list, calendar, search, tag pages, day pages, a D3 force-directed tag graph, and a JSON stats endpoint.
-
-## Optional upgrades
-
-The base install gets you archiving. Two more steps are documented in `AGENT_GUIDE.md`:
-
-- **Fetch context from difficult links** — add a browser-based fetcher and the Playwright MCP server for sites that need JavaScript rendering or an existing browser session
-- **Send links from messaging apps** — add a Telegram/Discord/Slack gateway and forward URLs to the link-curator agent
-
-## Acknowledgments
-
-Built by [dodo-reach](https://github.com/dodo-reach) as a personal system, packaged for the Hermes community. Powered by [Hermes Agent](https://github.com/NousResearch/hermes-agent) by Nous Research.
+Tests use temporary vaults and do not run Hermes or the installer.
 
 ## License
 
-MIT
+Project code is MIT licensed. The vendored D3 7.9.0 bundle is ISC licensed; see
+`dashboard/static/vendor/README.md` and `LICENSE.d3.txt`.
