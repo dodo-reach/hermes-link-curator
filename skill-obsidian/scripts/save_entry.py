@@ -37,6 +37,8 @@ def parse_args():
     p.add_argument("--tags", required=True, help="Space-separated tags, # prefix optional")
     p.add_argument("--added", required=True, help="Date: YYYY-MM-DD")
     p.add_argument("--summary", required=True, help="Entry summary")
+    p.add_argument("--shared-by", default=None, help="Optional name of the person who shared the link")
+    p.add_argument("--context", choices=("work", "personal"), default=None, help="Optional link context")
     p.add_argument("--note", default=None, help="Optional note")
     p.add_argument("--source", default=None, help="Optional source field")
     p.add_argument("--status", default=None, help="Optional status field")
@@ -65,8 +67,12 @@ def build_entry_block(args) -> str:
         f"- **Type**: `{args.type}`",
         f"- **Tags**: {tags}",
         f"- **Added**: {args.added}",
-        f"- **Summary**: {args.summary}",
     ]
+    if args.shared_by:
+        lines.append(f"- **Shared by**: {args.shared_by}")
+    if args.context:
+        lines.append(f"- **Context**: `{args.context}`")
+    lines.append(f"- **Summary**: {args.summary}")
     if args.note:
         lines.append(f"- **Note**: {args.note}")
     if args.source:
@@ -140,6 +146,15 @@ def validate_url(url: str) -> bool:
 
 def main():
     args = parse_args()
+
+    if args.shared_by is not None:
+        if "\n" in args.shared_by or "\r" in args.shared_by:
+            print("ERROR: Shared by must be a single line", file=sys.stderr)
+            sys.exit(1)
+        if re.search(r"\*\*[^*\r\n]+\*\*\s*:", args.shared_by):
+            print("ERROR: Shared by must not contain a Markdown field marker", file=sys.stderr)
+            sys.exit(1)
+        args.shared_by = args.shared_by.strip() or None
 
     if not validate_date(args.added):
         print(f"ERROR: Invalid date '{args.added}' (expected YYYY-MM-DD)", file=sys.stderr)

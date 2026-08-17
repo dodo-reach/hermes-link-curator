@@ -40,10 +40,18 @@ The vault is **auto-discovered** by the dashboard and the save scripts. You do n
 - **Type**: `github` | `x-post` | `article` | `tool` | `video` | `paper` | `other`
 - **Tags**: #tag1 #tag2 #tag3
 - **Added**: YYYY-MM-DD
+- **Shared by**: Ibby
+- **Context**: `work`
 - **Summary**: What is it? Why does it matter? What do you do with it?
 ```
 
 The save script adds `---` separators for you. Do not include `---` inside the entry block you pass to the script; duplicate separators can create empty chunks in the dashboard parser.
+
+`Shared by` and `Context` are optional; omit missing fields. Pass them with `--shared-by "Ibby"` and `--context work|personal`. The dashboard displays and searches both fields.
+
+Never guess `Shared by`; include it only when the user identifies the person. Set Context when the user says work or personal. Infer it only from unambiguous framing: QSIC, Jira, pull requests, or employment tasks → `work`; family, travel, hobbies, or personal activities → `personal`. A technical article is not automatically work-related. If Context is unclear, omit it and do not ask.
+
+Examples: “Ibby shared this with me” → `shared_by=Ibby`; “Save this for work” → `context=work`; “Ibby sent me this for work” → both; “Archive this link” → neither unless clearly framed.
 
 ## Types
 

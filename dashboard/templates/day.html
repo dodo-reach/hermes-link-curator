@@ -14,11 +14,13 @@
       <span class="entry-expand-icon">▾</span>
       <div class="entry-header">
         <span class="entry-type">{{ entry.entry_type }}</span>
+        {% if entry.context %}<span class="entry-context">{{ entry.context|title }}</span>{% endif %}
         <p class="entry-title">
           {% if entry.url %}<a href="{{ entry.url }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">{{ entry.title }}</a>{% else %}{{ entry.title }}{% endif %}
         </p>
       </div>
       {% if entry.summary %}<p class="entry-summary">{{ entry.summary }}</p>{% endif %}
+      {% if entry.shared_by %}<p class="entry-shared-by">Shared by: {{ entry.shared_by }}</p>{% endif %}
       {% if entry.tags %}
       <div class="entry-tags">
         {% for tag in entry.tags %}

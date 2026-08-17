@@ -148,6 +148,8 @@ async def day_json(date: str) -> JSONResponse:
             "entry_type": e.entry_type,
             "summary": e.summary,
             "tags": e.tags,
+            "shared_by": e.shared_by,
+            "context": e.context,
         }
         for e in day_data.entries
     ])
@@ -158,12 +160,16 @@ async def stats() -> JSONResponse:
     entries = get_all_entries()
     tags = get_tags()
     type_counts: dict[str, int] = {}
+    context_counts: dict[str, int] = {}
     for e in entries:
         type_counts[e.entry_type] = type_counts.get(e.entry_type, 0) + 1
+        if e.context in {"work", "personal"}:
+            context_counts[e.context] = context_counts.get(e.context, 0) + 1
     return JSONResponse({
         "total": len(entries),
         "days": len(set(e.added for e in entries)),
         "by_type": type_counts,
+        "by_context": context_counts,
         "top_tags": tags[:15],
     })
 

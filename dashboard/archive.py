@@ -31,6 +31,8 @@ class ArchiveEntry:
     tags: list[str]
     added: str
     summary: str
+    shared_by: Optional[str] = None
+    context: Optional[str] = None
     status: Optional[str] = None
     note: Optional[str] = None
     source: Optional[str] = None
@@ -54,6 +56,8 @@ def _parse_entry(block: str, file: str = "INDEX.md") -> Optional[ArchiveEntry]:
     tags_m = re.findall(r'#\w[-\w]*', block)
     added_m = re.search(r'\*\*Added\*\*:\s*(\d{4}-\d{2}-\d{2})', block)
     summary_m = re.search(r'\*\*Summary\*\*:\s*(.+?)(?=\n---|\n\*\*Note|\Z)', block, re.DOTALL)
+    shared_by_m = re.search(r'^- \*\*Shared by\*\*:\s*([^\r\n]+?)\s*$', block, re.MULTILINE)
+    context_m = re.search(r'^- \*\*Context\*\*: `(work|personal)`$', block, re.MULTILINE)
     status_m = re.search(r'\*\*Status\*\*:\s*`([^`]+)`', block)
     note_m = re.search(r'\*\*Note\*\*:\s*(.+?)(?=\n---|\Z)', block, re.DOTALL)
     source_m = re.search(r'\*\*Source\*\*:\s*(.+?)(?=\n---|\Z)', block, re.DOTALL)
@@ -77,6 +81,8 @@ def _parse_entry(block: str, file: str = "INDEX.md") -> Optional[ArchiveEntry]:
         tags=[t.strip() for t in tags_m],
         added=added_m.group(1).strip(),
         summary=summary,
+        shared_by=shared_by_m.group(1).strip() if shared_by_m else None,
+        context=context_m.group(1) if context_m else None,
         status=status_m.group(1).strip() if status_m else None,
         note=note_m.group(1).strip() if note_m else None,
         source=source_m.group(1).strip() if source_m else None,
@@ -170,12 +176,14 @@ def get_tags() -> list[tuple[str, int]]:
 
 
 def search_entries(query: str) -> list[ArchiveEntry]:
-    """Search entries by title, summary, or tags. Uses cached entries."""
+    """Search entries by title, summary, tags, sharer, or context."""
     q = query.lower()
     results = []
     for e in get_all_entries():
         if (q in e.title.lower() or q in e.summary.lower() or
             q in " ".join(e.tags).lower() or
+            q in (e.shared_by or "").lower() or
+            q in (e.context or "").lower() or
             any(q in t for t in e.tags)):
             results.append(e)
     return results
@@ -222,6 +230,8 @@ def get_graph_data() -> dict:
             "kind": "entry",
             "type": e.entry_type,
             "url": e.url,
+            "shared_by": e.shared_by,
+            "context": e.context,
             "count": 1,
         })
 

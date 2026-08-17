@@ -134,6 +134,7 @@
     }
     .entry-card:hover { border-color: #bbb; }
     .entry-card.is-collapsed .entry-summary,
+    .entry-card.is-collapsed .entry-shared-by,
     .entry-card.is-collapsed .entry-tags { display: none; }
     .entry-header { display: flex; align-items: baseline; gap: 0.6rem; }
     .entry-type {
@@ -144,10 +145,20 @@
       letter-spacing: 0.06em;
       flex-shrink: 0;
     }
+    .entry-context {
+      font-size: 0.66rem;
+      color: var(--text-muted);
+      background: var(--bg-secondary);
+      padding: 0.05rem 0.4rem;
+      border-radius: 2rem;
+      line-height: 1.5;
+      flex-shrink: 0;
+    }
     .entry-title { font-weight: 400; font-size: 0.9rem; flex: 1; }
     .entry-title a { color: inherit; }
     .entry-title a:hover { color: var(--text-muted); }
     .entry-summary { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.55; }
+    .entry-shared-by { font-size: 0.75rem; color: var(--text-subtle); margin-top: 0.4rem; }
     .entry-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem; }
     .entry-tag {
       font-size: 0.7rem;
@@ -353,6 +364,15 @@
     </div>
   </footer>
 
+  <script>
+  document.querySelectorAll('.entry-card').forEach(function(card) {
+    card.addEventListener('click', function(event) {
+      if (event.target.tagName === 'A') return;
+      card.classList.toggle('is-collapsed');
+      card.classList.toggle('is-expanded');
+    });
+  });
+  </script>
   {% block calendar_script %}{% endblock %}
 </body>
 </html>

@@ -139,6 +139,13 @@
     type.textContent = entry.entry_type || 'link';
     header.appendChild(type);
 
+    if (entry.context) {
+      var context = document.createElement('span');
+      context.className = 'entry-context';
+      context.textContent = entry.context.charAt(0).toUpperCase() + entry.context.slice(1);
+      header.appendChild(context);
+    }
+
     var title = document.createElement('p');
     title.className = 'entry-title';
     if (entry.url) {
@@ -159,6 +166,13 @@
       summary.className = 'entry-summary';
       summary.textContent = entry.summary;
       article.appendChild(summary);
+    }
+
+    if (entry.shared_by) {
+      var sharedBy = document.createElement('p');
+      sharedBy.className = 'entry-shared-by';
+      sharedBy.textContent = 'Shared by: ' + entry.shared_by;
+      article.appendChild(sharedBy);
     }
 
     if (entry.tags && entry.tags.length) {

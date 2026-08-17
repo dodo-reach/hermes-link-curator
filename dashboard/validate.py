@@ -25,6 +25,39 @@ def validate_entry(block: str) -> ValidationResult:
     errors = []
     warnings = []
 
+    # Optional metadata is valid when absent. When a field-like line is present,
+    # require the canonical spelling and shape so malformed values cannot be
+    # silently treated as missing.
+    block_lines = block.split("\n")
+    context_marker_re = re.compile(
+        r'^[ \t]*-[ \t]+\*{0,3}Context\*{0,3}(?:[ \t]*:|[ \t]+|[ \t]*$)'
+    )
+    context_canonical_re = re.compile(r'^- \*\*Context\*\*: `(work|personal)`$')
+    context_lines = [line for line in block_lines if context_marker_re.match(line)]
+    if context_lines and (
+        len(context_lines) != 1 or not context_canonical_re.fullmatch(context_lines[0])
+    ):
+        errors.append("Malformed **Context** field (expected `work` or `personal` in backticks)")
+
+    shared_by_marker_re = re.compile(
+        r'^[ \t]*-[ \t]+\*{0,3}Shared by\*{0,3}(?:[ \t]*:|[ \t]+|[ \t]*$)'
+    )
+    shared_by_canonical_re = re.compile(r'^- \*\*Shared by\*\*: ([^\r\n]+)$')
+    embedded_field_re = re.compile(r'\*\*[^*\r\n]+\*\*\s*:')
+    shared_by_lines = [line for line in block_lines if shared_by_marker_re.match(line)]
+    shared_by_valid = False
+    if len(shared_by_lines) == 1:
+        shared_by_match = shared_by_canonical_re.fullmatch(shared_by_lines[0])
+        if shared_by_match:
+            value = shared_by_match.group(1)
+            shared_by_valid = (
+                bool(value.strip())
+                and value == value.strip()
+                and not embedded_field_re.search(value)
+            )
+    if shared_by_lines and (len(shared_by_lines) != 1 or not shared_by_valid):
+        errors.append("Malformed **Shared by** field (expected one non-empty plain-text line)")
+
     # 1. Title line
     if not re.search(r'^###\s+\S', block, re.MULTILINE):
         errors.append("Missing or malformed ### title line")

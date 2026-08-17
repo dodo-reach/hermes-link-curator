@@ -29,6 +29,8 @@ Do NOT respond with a summary of the content unless the user explicitly asks for
 - **Type**: `github` | `x-post` | `article` | `tool` | `video` | `paper` | `other`
 - **Tags**: #tag1 #tag2 #tag3
 - **Added**: YYYY-MM-DD
+- **Shared by**: Ibby
+- **Context**: `work`
 - **Summary**: What is this? Why does it matter? What do you do with it?
 
 ---
@@ -37,6 +39,16 @@ Do NOT respond with a summary of the content unless the user explicitly asks for
 ```
 
 `---` between every entry. No `---` = merged entry in dashboard. Parse splits on `\n---\n`.
+
+`Shared by` and `Context` are optional. Omit missing fields completely. When present, put them after `Added` and before `Summary`; Context must be exactly `work` or `personal`.
+
+Never guess `Shared by`. Include it only when the user identifies the person. Set Context when the user says the link is for work or personal. Infer Context only when the framing is unambiguous: QSIC, Jira, pull requests, or employment tasks mean `work`; family, travel, hobbies, or personal activities mean `personal`. A technical article is not automatically work-related. If unclear, omit Context and continue archiving without asking.
+
+Examples:
+- “Ibby shared this with me” → `shared_by=Ibby`
+- “Save this for work” → `context=work`
+- “Ibby sent me this for work” → `shared_by=Ibby`, `context=work`
+- “Archive this link” → omit both unless the framing clearly provides them
 
 ## Save workflow
 
@@ -49,8 +61,12 @@ python3 <profile-dir>/skills/note-taking/obsidian/scripts/save_entry.py \
   --type "article" \
   --tags "ai dev-tools" \
   --added "2026-06-04" \
+  --shared-by "Ibby" \
+  --context work \
   --summary "What it is and why it matters."
 ```
+
+Both flags are optional. The dashboard displays them on entry cards and includes them in search.
 
 The script:
 1. Reads INDEX.md in memory (never overwrites without reading)

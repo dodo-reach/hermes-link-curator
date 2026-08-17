@@ -62,6 +62,19 @@ readlink /proc/<pid>/cwd
 | `GET /graph` | Force-directed graph view (HTML + D3.js) |
 | `GET /graph-json` | Graph dataset as `{nodes, links}` JSON |
 
+## Optional entry metadata
+
+Support these optional canonical lines anywhere in an entry:
+
+```markdown
+- **Shared by**: Ibby
+- **Context**: `work`
+```
+
+Context is exactly `work` or `personal`. Missing metadata is valid. Display Context as a compact `Work` or `Personal` label and show `Shared by: <name>` only in expanded entry metadata. Search both fields. `/day-json` and graph entry nodes expose stable `shared_by` and `context` keys; `/stats` exposes `by_context`.
+
+Never guess `Shared by`; use it only when the user names the person. Set or infer Context only from unambiguous framing: QSIC, Jira, pull requests, or employment tasks → `work`; family, travel, hobbies, or personal activities → `personal`. A technical article alone is not work context. If unclear, omit it and do not interrupt archiving to ask.
+
 ## Caching — automatic
 
 `archive.py` uses **mtime-based invalidation** — no `lru_cache`, no manual invalidation needed:
@@ -158,7 +171,7 @@ The `/graph` endpoint renders a D3.js force-directed graph over the vault. Data
 is built by `get_graph_data()` in `archive.py` and exposed via `/graph-json`.
 
 **Data shape** (tag-graph, two node kinds):
-- `nodes`: `{id, label, kind: "tag"|"entry", count, type?, url?}`
+- `nodes`: `{id, label, kind: "tag"|"entry", count, type?, url?, shared_by?, context?}`
 - `links`: `{source: tag_id, target: entry_id}` — bipartite, no entry↔entry edges
 
 **Why tag-graph instead of entry-graph**: with 100+ entries, an entry↔entry
