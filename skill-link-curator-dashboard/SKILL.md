@@ -55,7 +55,7 @@ readlink /proc/<pid>/cwd
 | `GET /stats` | Tag counts, date distribution |
 | `GET /reload-cache` | Force-clear and reload vault cache |
 | `GET /calendar` | Calendar view |
-| `GET /search?q=...` | Search entries |
+| `GET /search?q=...` | Search and filter entries |
 | `GET /tag/{tag}` | Entries for a specific tag |
 | `GET /day/YYYY-MM-DD` | Entries for a specific day |
 | `GET /day-json/YYYY-MM-DD` | JSON feed for a day |
@@ -71,9 +71,23 @@ Support these optional canonical lines anywhere in an entry:
 - **Context**: `work`
 ```
 
-Context is exactly `work` or `personal`. Missing metadata is valid. Display Context as a compact `Work` or `Personal` label and show `Shared by: <name>` only in expanded entry metadata. Search both fields. `/day-json` and graph entry nodes expose stable `shared_by` and `context` keys; `/stats` exposes `by_context`.
+Context is exactly `work` or `personal`. Missing metadata is valid. Every collapsed card displays available Context and `Shared by <name>` metadata, including a text-only circular sender initial. Omit either element cleanly when absent. Search both fields. `/day-json` and graph entry nodes expose stable `shared_by` and `context` keys; `/stats` exposes `by_context`.
 
 Never guess `Shared by`; use it only when the user names the person. Set or infer Context only from unambiguous framing: QSIC, Jira, pull requests, or employment tasks → `work`; family, travel, hobbies, or personal activities → `personal`. A technical article alone is not work context. If unclear, omit it and do not interrupt archiving to ask.
+
+## Filtering and responsive cards
+
+The list and search pages accept `q`, `context`, `shared_by`, `tag`, and `type` query parameters. Structured filters are independent, combinable, exact, and case-insensitive; `q` remains a case-insensitive substring search across the supported fields. Forms must preserve the other active parameters. Unknown values return an empty result set. Clear/reset actions remove every search and filter parameter.
+
+Filter dropdown options and counts come from parsed Markdown entries. Deduplicate people, topics, and types case-insensitively. Show only the three most-used topic tags above the results; the complete tag set belongs in the topic selector. Render active filters as removable chips with the filtered result count.
+
+Cards in list, search, tag, day, and calendar-generated results share this collapsed order: type, optional context, optional sender initial/name, title, collapsed summary, and tags. Normalize whitespace and truncate only the collapsed summary to at most 100 characters including `…`, at a word boundary when possible. Preserve full source and JSON summaries, and show the full summary when a card expands. Escape Jinja values normally and use DOM `textContent` for generated cards.
+
+Below 768px, use full-width segmented primary navigation, a compact search-plus-Filters row, horizontally scrolling top topics, one card column, two visible tags plus `+N`, and controls at least 44px high. The native-dialog filter sheet contains Context, Shared by, Topic, and Type controls; it traps focus, closes with its close button or Escape, prevents background scrolling, and restores focus to its trigger.
+
+## Tag semantics
+
+Tags describe link subjects, not type, context, or sender metadata. Automatic generation uses at most three lowercase tags, prefers existing tags, and hyphenates multiple words. Never automatically generate `#article`, `#github`, `#shared`, `#work`, `#personal`, or equivalents that duplicate structured fields. Explicit CLI tags are still accepted.
 
 ## Caching — automatic
 

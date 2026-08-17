@@ -59,7 +59,11 @@ Examples: “Ibby shared this with me” → `shared_by=Ibby`; “Save this for 
 
 ## Tags
 
-3–6 per entry, lowercase, reuse existing tags. Suggested seed set:
+Automatically add no more than three subject tags. Prefer existing vault tags instead of creating synonyms. Use lowercase and hyphens for multiple words, such as `#ai-security`.
+
+Tags must not duplicate structured metadata: never automatically create type, context, or sender tags such as `#article`, `#github`, `#shared`, `#work`, or `#personal`. Explicit CLI tags remain allowed; these rules apply only to automatic generation.
+
+Suggested seed set:
 `#ai` `#design` `#dev-tools` `#productivity` `#open-source` `#tutorial` `#local-ai` `#agent`
 
 ## Edge cases

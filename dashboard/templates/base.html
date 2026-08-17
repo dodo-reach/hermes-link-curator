@@ -339,6 +339,7 @@
       .site-header .container { flex-wrap: wrap; }
     }
   </style>
+  <link rel="stylesheet" href="/static/dashboard.css" />
 </head>
 <body>
   <header class="site-header">
@@ -365,13 +366,163 @@
   </footer>
 
   <script>
-  document.querySelectorAll('.entry-card').forEach(function(card) {
-    card.addEventListener('click', function(event) {
-      if (event.target.tagName === 'A') return;
+  (function() {
+    function toggleCard(card) {
       card.classList.toggle('is-collapsed');
       card.classList.toggle('is-expanded');
+    }
+
+    document.querySelectorAll('[data-entry-card]').forEach(function(card) {
+      card.addEventListener('click', function(event) {
+        if (event.target.closest('a, button')) return;
+        toggleCard(card);
+      });
     });
-  });
+
+    document.querySelectorAll('[data-combobox]').forEach(function(combobox) {
+      var input = combobox.querySelector('input[role="combobox"]');
+      var listbox = combobox.querySelector('[role="listbox"]');
+      var toggle = combobox.querySelector('[data-combobox-toggle]');
+      var options = Array.from(combobox.querySelectorAll('[role="option"]'));
+      var activeIndex = -1;
+      var empty = document.createElement('div');
+      empty.className = 'combobox-empty';
+      empty.textContent = 'No matching options';
+      empty.hidden = true;
+      listbox.appendChild(empty);
+
+      function visibleOptions() {
+        return options.filter(function(option) { return !option.hidden; });
+      }
+      function setActive(index) {
+        var visible = visibleOptions();
+        options.forEach(function(option) { option.classList.remove('is-active'); });
+        activeIndex = visible.length && index >= 0 ? Math.min(index, visible.length - 1) : -1;
+        if (activeIndex >= 0) {
+          visible[activeIndex].classList.add('is-active');
+          input.setAttribute('aria-activedescendant', visible[activeIndex].id);
+          visible[activeIndex].scrollIntoView({ block: 'nearest' });
+        } else {
+          input.removeAttribute('aria-activedescendant');
+        }
+      }
+      function filterOptions() {
+        var term = input.value.trim().toLocaleLowerCase();
+        options.forEach(function(option) {
+          option.hidden = Boolean(term) && !option.dataset.search.toLocaleLowerCase().includes(term);
+        });
+        empty.hidden = visibleOptions().length !== 0;
+        setActive(-1);
+      }
+      function open() {
+        document.querySelectorAll('[data-combobox] [role="listbox"]').forEach(function(other) {
+          if (other !== listbox) {
+            other.hidden = true;
+            var otherInput = document.querySelector('[aria-controls="' + other.id + '"]');
+            if (otherInput) otherInput.setAttribute('aria-expanded', 'false');
+          }
+        });
+        filterOptions();
+        listbox.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+      }
+      function close() {
+        listbox.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+        setActive(-1);
+      }
+      function choose(option) {
+        input.value = option.dataset.value;
+        options.forEach(function(item) {
+          item.setAttribute('aria-selected', item === option ? 'true' : 'false');
+        });
+        close();
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      input.addEventListener('focus', open);
+      input.addEventListener('click', open);
+      input.addEventListener('input', function() {
+        if (listbox.hidden) open(); else filterOptions();
+      });
+      input.addEventListener('keydown', function(event) {
+        var visible = visibleOptions();
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          if (listbox.hidden) open();
+          setActive(activeIndex + 1);
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          if (listbox.hidden) open();
+          setActive(activeIndex <= 0 ? visibleOptions().length - 1 : activeIndex - 1);
+        } else if (event.key === 'Enter' && !listbox.hidden && activeIndex >= 0) {
+          event.preventDefault();
+          choose(visibleOptions()[activeIndex]);
+        } else if (event.key === 'Escape' && !listbox.hidden) {
+          event.preventDefault();
+          event.stopPropagation();
+          close();
+        }
+      });
+      toggle.addEventListener('click', function() {
+        if (listbox.hidden) {
+          input.focus();
+          open();
+        } else {
+          close();
+          input.focus();
+        }
+      });
+      options.forEach(function(option) {
+        option.addEventListener('mousedown', function(event) { event.preventDefault(); });
+        option.addEventListener('click', function() { choose(option); });
+      });
+      document.addEventListener('click', function(event) {
+        if (!combobox.contains(event.target)) close();
+      });
+    });
+
+    document.querySelectorAll('[data-auto-submit] input, [data-auto-submit] select').forEach(function(control) {
+      control.addEventListener('change', function() { control.form.requestSubmit(); });
+    });
+
+    var sheet = document.getElementById('mobile-filter-sheet');
+    var lastFilterTrigger = null;
+    function openFilters(trigger) {
+      if (!sheet || typeof sheet.showModal !== 'function') return;
+      lastFilterTrigger = trigger;
+      document.body.classList.add('sheet-open');
+      sheet.showModal();
+      var close = sheet.querySelector('[data-close-filters]');
+      if (close) close.focus();
+    }
+    function finishClosingFilters() {
+      document.body.classList.remove('sheet-open');
+      if (lastFilterTrigger) lastFilterTrigger.focus();
+    }
+
+    document.querySelectorAll('[data-open-filters]').forEach(function(button) {
+      button.addEventListener('click', function() { openFilters(button); });
+    });
+    document.querySelectorAll('[data-close-filters]').forEach(function(button) {
+      button.addEventListener('click', function() { sheet.close(); });
+    });
+    if (sheet) {
+      sheet.addEventListener('close', finishClosingFilters);
+      sheet.addEventListener('cancel', function() { document.body.classList.remove('sheet-open'); });
+    }
+
+    document.querySelectorAll('[data-more-topics]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        if (window.matchMedia('(max-width: 767px)').matches) {
+          openFilters(button);
+        } else {
+          var topicSelect = document.getElementById('desktop-topic');
+          if (topicSelect) topicSelect.focus();
+        }
+      });
+    });
+  })();
   </script>
   {% block calendar_script %}{% endblock %}
 </body>

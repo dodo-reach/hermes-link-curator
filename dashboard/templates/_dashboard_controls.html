@@ -1,0 +1,140 @@
+{% macro preserved_filter_inputs(exclude='') %}
+  {% for key in ['context', 'shared_by', 'tag', 'type'] %}
+    {% if key != exclude and selected[key] %}<input type="hidden" name="{{ key }}" value="{{ selected[key] }}" />{% endif %}
+  {% endfor %}
+{% endmacro %}
+
+{% macro context_control(prefix) %}
+<fieldset class="context-control">
+  <legend>Context</legend>
+  <div class="segmented-control">
+    <label for="{{ prefix }}-context-all">
+      <input id="{{ prefix }}-context-all" type="radio" name="context" value="" {% if not selected.context %}checked{% endif %} />
+      <span>All</span>
+    </label>
+    <label for="{{ prefix }}-context-work">
+      <input id="{{ prefix }}-context-work" type="radio" name="context" value="work" {% if selected_context == 'work' %}checked{% endif %} />
+      <span>Work</span>
+    </label>
+    <label for="{{ prefix }}-context-personal">
+      <input id="{{ prefix }}-context-personal" type="radio" name="context" value="personal" {% if selected_context == 'personal' %}checked{% endif %} />
+      <span>Personal</span>
+    </label>
+  </div>
+</fieldset>
+{% endmacro %}
+
+{% macro person_select(id) %}
+<div class="filter-field">
+  <label for="{{ id }}">Shared by</label>
+  <div class="filter-combobox" data-combobox>
+    <input id="{{ id }}" name="shared_by" value="{{ selected.shared_by }}" placeholder="Anyone" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="{{ id }}-options" />
+    <button type="button" class="combobox-toggle" data-combobox-toggle aria-label="Show Shared by options" tabindex="-1">⌄</button>
+    <div id="{{ id }}-options" class="combobox-listbox" role="listbox" hidden>
+      <div id="{{ id }}-option-any" class="combobox-option" role="option" data-value="" data-search="anyone" aria-selected="{{ 'true' if not selected.shared_by else 'false' }}">Anyone</div>
+      {% for name, count, is_selected in people_options %}<div id="{{ id }}-option-{{ loop.index }}" class="combobox-option" role="option" data-value="{{ name }}" data-search="{{ name }} {{ count }}" aria-selected="{{ 'true' if is_selected else 'false' }}">{{ name }} <span>({{ count }})</span></div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro topic_select(id) %}
+<div class="filter-field">
+  <label for="{{ id }}">Topic</label>
+  <div class="filter-combobox" data-combobox>
+    <input id="{{ id }}" name="tag" value="{{ selected.tag }}" placeholder="All topics" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="{{ id }}-options" />
+    <button type="button" class="combobox-toggle" data-combobox-toggle aria-label="Show Topic options" tabindex="-1">⌄</button>
+    <div id="{{ id }}-options" class="combobox-listbox" role="listbox" hidden>
+      <div id="{{ id }}-option-all" class="combobox-option" role="option" data-value="" data-search="all topics" aria-selected="{{ 'true' if not selected.tag else 'false' }}">All topics</div>
+      {% for name, count, is_selected in topic_options %}<div id="{{ id }}-option-{{ loop.index }}" class="combobox-option" role="option" data-value="{{ name }}" data-search="{{ name }} {{ count }}" aria-selected="{{ 'true' if is_selected else 'false' }}">{{ name }} <span>({{ count }})</span></div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro type_select(id) %}
+<div class="filter-field">
+  <label for="{{ id }}">Type</label>
+  <div class="filter-combobox" data-combobox>
+    <input id="{{ id }}" name="type" value="{{ selected.type }}" placeholder="All types" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="{{ id }}-options" />
+    <button type="button" class="combobox-toggle" data-combobox-toggle aria-label="Show Type options" tabindex="-1">⌄</button>
+    <div id="{{ id }}-options" class="combobox-listbox" role="listbox" hidden>
+      <div id="{{ id }}-option-all" class="combobox-option" role="option" data-value="" data-search="all types" aria-selected="{{ 'true' if not selected.type else 'false' }}">All types</div>
+      {% for name, count, is_selected in type_options %}<div id="{{ id }}-option-{{ loop.index }}" class="combobox-option" role="option" data-value="{{ name }}" data-search="{{ name }} {{ count }}" aria-selected="{{ 'true' if is_selected else 'false' }}">{{ name|title }} <span>({{ count }})</span></div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro dashboard_controls() %}
+<section class="dashboard-controls" aria-label="Search and filter links">
+  <div class="desktop-search">
+    <form class="search-form" action="{{ filter_action }}" method="get">
+      <input type="search" name="q" class="search-input" placeholder="Search links…" value="{{ query }}" aria-label="Search links" />
+      {{ preserved_filter_inputs() }}
+      <button type="submit" class="search-btn">Search</button>
+    </form>
+  </div>
+
+  <div class="mobile-search">
+    <form class="search-form" action="{{ filter_action }}" method="get">
+      <input type="search" name="q" class="search-input" placeholder="Search links…" value="{{ query }}" aria-label="Search links" />
+      {{ preserved_filter_inputs() }}
+    </form>
+    <button type="button" class="filters-button" data-open-filters aria-haspopup="dialog" aria-controls="mobile-filter-sheet">
+      <span aria-hidden="true">☰</span> Filters
+    </button>
+  </div>
+
+  <form class="desktop-filter-toolbar" action="{{ filter_action }}" method="get" data-auto-submit>
+    {% if query %}<input type="hidden" name="q" value="{{ query }}" />{% endif %}
+    {{ context_control('desktop') }}
+    {{ person_select('desktop-shared-by') }}
+    {{ topic_select('desktop-topic') }}
+    {{ type_select('desktop-type') }}
+    <button type="submit" class="visually-hidden">Apply filters</button>
+    <a href="{{ clear_filters_url }}" class="clear-filters">Clear filters</a>
+  </form>
+
+  {% if top_topics %}
+  <div class="top-topics" aria-label="Top topics">
+    {% for topic in top_topics %}
+    <a href="{{ topic.url }}" class="topic-chip{% if topic.active %} active{% endif %}">
+      <span>{{ topic.name }}</span> <span class="topic-count">{{ topic.count }}</span>
+    </a>
+    {% endfor %}
+    <button type="button" class="topic-chip more-topics" data-more-topics>More topics</button>
+  </div>
+  {% endif %}
+
+  <div class="results-status" aria-live="polite">
+    <span>{{ result_count }} result{% if result_count != 1 %}s{% endif %}</span>
+    {% if active_filters %}
+    <div class="active-filters" aria-label="Active filters">
+      {% for filter in active_filters %}
+      <a class="active-filter-chip" href="{{ filter.remove_url }}" aria-label="Remove {{ filter.label }} filter {{ filter.value }}">
+        <span>{{ filter.label }}: {{ filter.value }}</span><span aria-hidden="true">×</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<dialog id="mobile-filter-sheet" class="filter-sheet" aria-labelledby="filter-sheet-title">
+  <div class="sheet-handle" aria-hidden="true"></div>
+  <div class="sheet-header">
+    <h2 id="filter-sheet-title">Filters</h2>
+    <button type="button" class="sheet-close" data-close-filters aria-label="Close filters">×</button>
+  </div>
+  <form action="{{ filter_action }}" method="get" class="sheet-form">
+    {% if query %}<input type="hidden" name="q" value="{{ query }}" />{% endif %}
+    {{ context_control('mobile') }}
+    {{ person_select('mobile-shared-by') }}
+    {{ topic_select('mobile-topic') }}
+    {{ type_select('mobile-type') }}
+    <a href="{{ clear_filters_url }}" class="reset-filters">Reset filters</a>
+    <button type="submit" class="show-results">Show {{ result_count }} result{% if result_count != 1 %}s{% endif %}</button>
+  </form>
+</dialog>
+{% endmacro %}

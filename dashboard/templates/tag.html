@@ -1,36 +1,14 @@
 {% extends "base.html" %}
+{% from "_components.html" import entry_card %}
 
 {% block content %}
 <div class="container">
-
-  <div style="margin: 1.5rem 0 1rem;">
-    <a href="/" style="font-size:0.85rem;color:var(--text-muted);">← All links</a>
-    <span style="font-size:0.85rem;color:var(--text-muted);"> · {{ tag_entries|length }} link{% if tag_entries|length != 1 %}s{% endif %}</span>
+  <div class="view-heading">
+    <a href="/">← All links</a>
+    <span>· {{ tag_entries|length }} link{% if tag_entries|length != 1 %}s{% endif %} tagged #{{ tag }}</span>
   </div>
-
-  <div class="days-list">
-    {% for entry in tag_entries %}
-    <article class="entry-card is-collapsed">
-      <span class="entry-expand-icon">▾</span>
-      <div class="entry-header">
-        <span class="entry-type">{{ entry.entry_type }}</span>
-        {% if entry.context %}<span class="entry-context">{{ entry.context|title }}</span>{% endif %}
-        <p class="entry-title">
-          {% if entry.url %}<a href="{{ entry.url }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">{{ entry.title }}</a>{% else %}{{ entry.title }}{% endif %}
-        </p>
-      </div>
-      {% if entry.summary %}<p class="entry-summary">{{ entry.summary }}</p>{% endif %}
-      {% if entry.shared_by %}<p class="entry-shared-by">Shared by: {{ entry.shared_by }}</p>{% endif %}
-      {% if entry.tags %}
-      <div class="entry-tags">
-        {% for tag in entry.tags %}
-        <a href="/tag/{{ tag.lstrip('#') }}" class="entry-tag" onclick="event.stopPropagation()">{{ tag }}</a>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </article>
-    {% endfor %}
+  <div class="days-list search-results">
+    {% for entry in tag_entries %}{{ entry_card(entry) }}{% endfor %}
   </div>
-
 </div>
 {% endblock %}

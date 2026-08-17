@@ -50,6 +50,16 @@ Examples:
 - “Ibby sent me this for work” → `shared_by=Ibby`, `context=work`
 - “Archive this link” → omit both unless the framing clearly provides them
 
+## Topic tags
+
+Tags describe the subject of a link; they do not repeat structured metadata. When generating tags automatically:
+
+- Add no more than three topic tags.
+- Prefer an existing vault tag instead of creating a synonym.
+- Use lowercase and hyphens for multiple words, such as `#ai-security`.
+- Never generate tags for type, context, or sender metadata. In particular, do not generate `#article`, `#github`, `#shared`, `#work`, or `#personal`.
+- Do not reject or remove tags explicitly supplied through the CLI. These rules govern automatic tag generation only.
+
 ## Save workflow
 
 **Use `save_entry.py`** — atomic read+patch, never overwrites INDEX.md.

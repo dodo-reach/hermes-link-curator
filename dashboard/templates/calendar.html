@@ -45,7 +45,7 @@
         .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
     const grid = document.getElementById('calendar-grid');
-    grid.innerHTML = '';
+    grid.replaceChildren();
 
     const firstDay = new Date(currentYear, currentMonth, 1);
     const lastDay = new Date(currentYear, currentMonth + 1, 0);
@@ -97,18 +97,24 @@
 
   function showDayPanel(dateStr, label, count) {
     const panel = document.getElementById('day-panel');
-    panel.innerHTML = '';
+    panel.replaceChildren();
 
     const section = document.createElement('div');
     section.className = 'day-entries-panel';
 
     const header = document.createElement('div');
     header.className = 'day-entries-header';
-    header.innerHTML = '<span class="day-entries-title">' + label + '</span>' +
-      '<span class="day-entries-count">' + count + ' link' + (count === 1 ? '' : 's') + ' · close</span>';
+    const headerTitle = document.createElement('span');
+    headerTitle.className = 'day-entries-title';
+    headerTitle.textContent = label;
+    const headerCount = document.createElement('span');
+    headerCount.className = 'day-entries-count';
+    headerCount.textContent = count + ' link' + (count === 1 ? '' : 's') + ' · close';
+    header.appendChild(headerTitle);
+    header.appendChild(headerCount);
     header.addEventListener('click', function() {
       section.classList.remove('is-open');
-      setTimeout(function() { panel.innerHTML = ''; }, 200);
+      setTimeout(function() { panel.replaceChildren(); }, 200);
     });
 
     const list = document.createElement('div');
@@ -130,21 +136,39 @@
   function makeEntryCard(entry) {
     const article = document.createElement('article');
     article.className = 'entry-card is-collapsed';
+    article.setAttribute('data-entry-card', '');
 
-    var header = document.createElement('div');
-    header.className = 'entry-header';
+    var meta = document.createElement('div');
+    meta.className = 'entry-meta';
 
     var type = document.createElement('span');
     type.className = 'entry-type';
     type.textContent = entry.entry_type || 'link';
-    header.appendChild(type);
+    meta.appendChild(type);
 
     if (entry.context) {
       var context = document.createElement('span');
       context.className = 'entry-context';
       context.textContent = entry.context.charAt(0).toUpperCase() + entry.context.slice(1);
-      header.appendChild(context);
+      meta.appendChild(context);
     }
+
+    if (entry.shared_by) {
+      var sender = document.createElement('span');
+      sender.className = 'entry-sender';
+      var initial = document.createElement('span');
+      initial.className = 'sender-initial';
+      initial.setAttribute('aria-hidden', 'true');
+      var initialMatch = entry.shared_by.match(/[\p{L}\p{N}]/u);
+      initial.textContent = initialMatch ? initialMatch[0].toUpperCase() : '';
+      var senderLabel = document.createElement('span');
+      senderLabel.textContent = 'Shared by ' + entry.shared_by;
+      sender.appendChild(initial);
+      sender.appendChild(senderLabel);
+      meta.appendChild(sender);
+    }
+
+    article.appendChild(meta);
 
     var title = document.createElement('p');
     title.className = 'entry-title';
@@ -158,32 +182,34 @@
     } else {
       title.textContent = entry.title;
     }
-    header.appendChild(title);
-    article.appendChild(header);
+    article.appendChild(title);
 
     if (entry.summary) {
-      var summary = document.createElement('p');
-      summary.className = 'entry-summary';
-      summary.textContent = entry.summary;
-      article.appendChild(summary);
-    }
-
-    if (entry.shared_by) {
-      var sharedBy = document.createElement('p');
-      sharedBy.className = 'entry-shared-by';
-      sharedBy.textContent = 'Shared by: ' + entry.shared_by;
-      article.appendChild(sharedBy);
+      var collapsed = document.createElement('p');
+      collapsed.className = 'entry-summary entry-collapsed-summary';
+      collapsed.textContent = truncateSummary(entry.summary);
+      article.appendChild(collapsed);
+      var full = document.createElement('p');
+      full.className = 'entry-summary entry-full-summary';
+      full.textContent = entry.summary;
+      article.appendChild(full);
     }
 
     if (entry.tags && entry.tags.length) {
       var tagsDiv = document.createElement('div');
       tagsDiv.className = 'entry-tags';
-      entry.tags.forEach(function(tag) {
+      entry.tags.forEach(function(tag, index) {
         var t = document.createElement('span');
-        t.className = 'entry-tag';
+        t.className = 'entry-tag' + (index > 1 ? ' mobile-tag-hidden' : '');
         t.textContent = tag;
         tagsDiv.appendChild(t);
       });
+      if (entry.tags.length > 2) {
+        var overflow = document.createElement('span');
+        overflow.className = 'mobile-tag-overflow';
+        overflow.textContent = '+' + (entry.tags.length - 2);
+        tagsDiv.appendChild(overflow);
+      }
       article.appendChild(tagsDiv);
     }
 
@@ -194,6 +220,15 @@
     });
 
     return article;
+  }
+
+  function truncateSummary(value) {
+    var normalized = String(value || '').replace(/\s+/g, ' ').trim();
+    if (normalized.length <= 100) return normalized;
+    var candidate = normalized.slice(0, 99);
+    var boundary = candidate.lastIndexOf(' ');
+    if (boundary > 0) candidate = candidate.slice(0, boundary);
+    return candidate.replace(/\s+$/, '') + '…';
   }
 
   document.getElementById('cal-prev').addEventListener('click', function() {
